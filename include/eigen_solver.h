@@ -14,6 +14,7 @@ typedef Eigen::VectorXd Vector;
 typedef Eigen::MatrixXd Matrix;
 
 struct StructureMatrix{
+	SpMat Dmat, Bmat;
 	SpMat mass, stiff, damping;
 };
 

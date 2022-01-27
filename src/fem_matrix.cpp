@@ -12,17 +12,7 @@
 #include "eigen_solver.h"
 #include "matrix_calc.h"
 
-/**
- * @brief      Calculate basis functions and jaccobian.
- *
- * @param[in]  k      { idx of quadrature point }
- * @param      J      { Jaccobian }
- * @param      x      { position in x }
- * @param      y      { position in y }
- * @param      N      { basis function }
- * @param      dN_dx  { derivative of N by x}
- * @param      dN_dy  { derivative of N by y}
- */void calcJacobian(
+void calcJacobian(
 	int k, 
 	std::vector<double>& J,
 	std::vector<double>& x,
@@ -81,10 +71,6 @@
 	}
 }
 
-/**
- * @brief  Calculates element stiffness matrix and assemble to adjuscent format
- *         when the element is 2-dimensional quadrirateral
- */
 void calcElementMatrix2Dquad(){
 #ifdef MEASURE
 	double time_start = elapsedTime();
@@ -148,29 +134,29 @@ void calcElementMatrix2Dquad(){
 			strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0));
 			stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));
 			for(l=0;l<4;l++){ // quadrature point
-				stress_disp_matrix[0][0] += dN_dx[0*4+l];
-				stress_disp_matrix[0][2] += dN_dx[1*4+l];
-				stress_disp_matrix[0][4] += dN_dx[2*4+l];
-				stress_disp_matrix[0][6] += dN_dx[3*4+l];
-				stress_disp_matrix[1][1] += dN_dy[0*4+l];
-				stress_disp_matrix[1][3] += dN_dy[1*4+l];
-				stress_disp_matrix[1][5] += dN_dy[2*4+l];
-				stress_disp_matrix[1][7] += dN_dy[3*4+l];
-				stress_disp_matrix[2][0] += dN_dy[0*4+l];
-				stress_disp_matrix[2][1] += dN_dx[0*4+l];
-				stress_disp_matrix[2][2] += dN_dy[1*4+l];
-				stress_disp_matrix[2][3] += dN_dx[1*4+l];
-				stress_disp_matrix[2][4] += dN_dy[2*4+l];
-				stress_disp_matrix[2][5] += dN_dx[2*4+l];
-				stress_disp_matrix[2][6] += dN_dy[3*4+l];
-				stress_disp_matrix[2][7] += dN_dx[3*4+l];
+				strain_disp_matrix[0][0] += dN_dx[0*4+l];
+				strain_disp_matrix[0][2] += dN_dx[1*4+l];
+				strain_disp_matrix[0][4] += dN_dx[2*4+l];
+				strain_disp_matrix[0][6] += dN_dx[3*4+l];
+				strain_disp_matrix[1][1] += dN_dy[0*4+l];
+				strain_disp_matrix[1][3] += dN_dy[1*4+l];
+				strain_disp_matrix[1][5] += dN_dy[2*4+l];
+				strain_disp_matrix[1][7] += dN_dy[3*4+l];
+				strain_disp_matrix[2][0] += dN_dy[0*4+l];
+				strain_disp_matrix[2][1] += dN_dx[0*4+l];
+				strain_disp_matrix[2][2] += dN_dy[1*4+l];
+				strain_disp_matrix[2][3] += dN_dx[1*4+l];
+				strain_disp_matrix[2][4] += dN_dy[2*4+l];
+				strain_disp_matrix[2][5] += dN_dx[2*4+l];
+				strain_disp_matrix[2][6] += dN_dy[3*4+l];
+				strain_disp_matrix[2][7] += dN_dx[3*4+l];
 			}
 			stress_strain_matrix = {
 				{1, structure.poisson_ratio, 0},
 				{structure.poisson_ratio, 1, 0},
 				{0, 0, (1-structure.poisson_ratio)/2}};
 			for(k=0;k<3;k++){
-				for(l=0;l<3:l++){
+				for(l=0;l<3;l++){
 					stress_strain_matrix[k][l] *= structure.youngs_modulus / (1 - structure.poisson_ratio * structure.poisson_ratio);
 				}
 			}
@@ -223,10 +209,6 @@ void calcElementMatrix2Dquad(){
 #endif
 }
 
-/**
- * @brief  Calculates element stiffness matrix and assemble to adjuscent format
- *         when the element is 3-dimensional tetrahedron
- */
 void calcElementMatrix3Dtetra(){
 #ifdef MEASURE
 	double time_start = elapsedTime();
@@ -384,9 +366,6 @@ void calcElementMatrix3Dtetra(){
 #endif
 }
 
-/**
- * @brief      Calculates shape function on boundary for neumann boundary condition calculation.
- */
 void calcBoundaryShapeFunction(){
 	int i = 0, j = 0, node_id;
 	std::vector<double> pos_x, pos_y, pos_z;

@@ -37,7 +37,7 @@ struct StructureParameter{
 
 	std::vector< std::vector<int> > element_node_table;
 	std::vector<double> x, y, z;
-	std::vector<double> disp_x, disp_y, disp_z;
+	std::vector<double> disp_all, disp_x, disp_y, disp_z;
 	// stress and strain
 	std::vector<double> stress_x, stress_y, stress_z;
 	std::vector<double> sheer_stress_xy, sheer_stress_yz, sheer_stress_zx;

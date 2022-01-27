@@ -7,10 +7,6 @@
 
 static StructureMatrix s_matrix;
 
-/**
- * @brief      Initialize sparse matrix (s_matrix) and set memory.
- * 
- */
 void initSparseMatrix(){
 #ifdef MEASURE
 	double time_start = elapsedTime();
@@ -19,10 +15,14 @@ void initSparseMatrix(){
 	s_matrix.mass.resize(structure.num_nodes, structure.num_nodes);
 	s_matrix.stiff.resize(structure.num_nodes, structure.num_nodes);
 	s_matrix.damping.resize(structure.num_nodes, structure.num_nodes);
+	s_matrix.Dmat.resize(structure.num_nodes, structure.num_nodes);
+	s_matrix.Bmat.resize(structure.num_nodes, structure.num_nodes);
 	// reserve memory
 	s_matrix.mass.reserve(sim_prm.num_nonzero);
 	s_matrix.stiff.reserve(sim_prm.num_nonzero);
 	s_matrix.damping.reserve(sim_prm.num_nonzero);
+	s_matrix.Dmat.reserve(sim_prm.num_nonzero);
+	s_matrix.Bmat.reserve(sim_prm.num_nonzero);
 #ifdef MEASURE
 	double time_end = elapsedTime();
 	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);
@@ -31,34 +31,21 @@ void initSparseMatrix(){
 #endif
 }
 
-/**
- * @brief      Free memory of sparse matrix (s_matrix)
- */
 void freeSparseMmatrix(){
 	// resize
 	s_matrix.mass.resize(0, 0);
 	s_matrix.stiff.resize(0, 0);
 	s_matrix.damping.resize(0, 0);
+	s_matrix.Dmat.resize(0, 0);
+	s_matrix.Bmat.resize(0, 0);
 	// free memory
 	s_matrix.mass.data().squeeze();
 	s_matrix.stiff.data().squeeze();
 	s_matrix.damping.data().squeeze();
+	s_matrix.Dmat.data().squeeze();
+	s_matrix.Bmat.data().squeeze();
 }
 
-/**
- * @brief      Set values of elements in sparse matrix
- *
- * @param      idx        index of nodes
- * @param      mass       mass matrix
- * @param      diffuse    diffuse matrix
- * @param      pressure   pressure matrix
- * @param      conti_x    continuity matrix in x
- * @param      conti_y    continuity matrix in y 
- * @param      conti_z    continuity matrix in z 
- * @param      mass_stab  mass stabilization matrix
- * @param      adv        advection matrix
- * @param      adv_stab   advection stabilization matrix
- */
 void setSparseMatrix(){
 #ifdef MEASURE
 	double time_start = elapsedTime();
@@ -72,6 +59,8 @@ void setSparseMatrix(){
 			s_matrix.mass.insert(i, nodeIdx)    = adj_matrix.mass[i][j];
 			s_matrix.stiff.insert(i, nodeIdx)   = adj_matrix.stiff[i][j];
 			s_matrix.damping.insert(i, nodeIdx) = adj_matrix.damping[i][j];
+			s_matrix.Dmat.insert(i, nodeIdx) = adj_matrix.stress_strain[i][j];
+			s_matrix.Bmat.insert(i, nodeIdx) = adj_matrix.strain_disp[i][j];
 		}
 	}
 #ifdef MEASURE
@@ -82,13 +71,6 @@ void setSparseMatrix(){
 #endif
 }
 
-/**
- * @brief      Set the boundary condition for velocity in x.
- *
- * @param      A    { Coefficient Matrix }
- * @param      b    { Right hand side vector }
- * @param      param {VX, VY, VZ, PRES}
- */
 void setBoundaryCondition(SpMat& A, Vector& b, ParameterID param_id){
 #ifdef MEASURE
 	double time_start = elapsedTime();
@@ -182,15 +164,35 @@ void setBoundaryCondition(SpMat& A, Vector& b, ParameterID param_id){
 #endif
 }
 
-/**
- * @brief      Choose linear equation solution algorithm
- *
- * @param      A     { Coefficient Matrix }
- * @param      x     { Unknoen parameter vector }
- * @param      b     { Right hand side vector }
- *
- * @return     { if succeeded in solving or not }
- */
+void solveStaticAnalysis(){
+	int i;
+	bool is_solved = true;
+	Vector rhs = Vector::Zero(structure.num_nodes);
+	Vector Uvec = Vector::Zero(structure.num_nodes);
+	SpMat B_trans(structure.num_nodes, structure.num_nodes);
+	B_trans = s_matrix.Bmat.transpose();
+
+	// create stiffness matrix
+	s_matrix.stiff = B_trans * s_matrix.Dmat * s_matrix.Bmat;
+
+	// set boundary condition
+	setBoundaryCondition(s_matrix.stiff, rhs, VX);
+
+	// solve
+	is_solved = eigenSolver(s_matrix.stiff, Uvec, rhs);
+
+	for(i=0;i<structure.num_nodes;i++){
+		structure.disp_all[i] = Uvec(i,0);
+	}
+
+	if(is_solved){
+		std::cout<<"Succeeded solveStaticAnalysis\n"<<std::endl;
+	}else{
+		std::cout<<"Failed to solveStaticAnalysis\n"<<std::endl;
+		exit(1);
+	}
+}
+
 bool eigenSolver(SpMat& A, Vector& x, Vector& b){
 #ifdef MEASURE
 	double time_start = elapsedTime();
@@ -219,15 +221,6 @@ bool eigenSolver(SpMat& A, Vector& x, Vector& b){
 	return ret;
 }
 
-/**
- * @brief      Solve linear equation with LU
- *
- * @param      A     { Coefficient Matrix }
- * @param      x     { Unknoen parameter vector }
- * @param      b     { Right hand side vector }
- *
- * @return     { if succeeded in solving or not }
- */
 bool eigenLU(SpMat& A, Vector& x, Vector& b){
 	Eigen::SparseLU<SpMat> solver;
 	solver.compute(A);
@@ -245,15 +238,6 @@ bool eigenLU(SpMat& A, Vector& x, Vector& b){
 	return true;
 }
 
-/**
- * @brief      { Solve linear equation with BiCGSTAB }
- *
- * @param      A     { Coefficient Matrix }
- * @param      x     { Unknoen parameter vector }
- * @param      b     { Right hand side vector }
- *
- * @return     { if succeeded in solving or not }
- */
 bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b){
 	Eigen::BiCGSTAB<SpMat> solver;
 	solver.setTolerance(1e-9);

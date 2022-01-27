@@ -10,9 +10,6 @@
 #include "time_measure.h"
 #include "init.h"
 
-/**
- * @brief      Run time loop of fluid simulation
- */
 void solve(){
 	int t, idx=1;
 
@@ -58,7 +55,8 @@ void solve(){
 
 		// set sparse matrix
 		setSparseMatrix();
-		// calc fluid flow with fractional step algorithm
+		// solve static analysis
+		solveStaticAnalysis();
 
 		if(t%sim_prm.output_interval == 0){
 			outputDispVtkFile(idx);

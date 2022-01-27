@@ -9,11 +9,6 @@
 #include "output.h"
 #include "matrix_calc.h"
 
-/**
- * @brief      Output vtk file of velocity
- *
- * @param[in]  number  {idx of vtk file}
- */
 void outputDispVtkFile(int number){
 	int i,j;
 	char head[16]="velocity";
@@ -57,9 +52,6 @@ void outputDispVtkFile(int number){
 	std::cout<<"Succeeded in making "<<filename<<"\n"<<std::endl;
 }
 
-/**
- * @brief      Output parameter setting data
- */
 void outputParameterDataFile(){
 	char filename[32]="param.log";
 	std::ofstream ofs(sim_prm.output_data_dirname + filename);

@@ -1,5 +1,9 @@
 # Simulation parameters
 #
+YOUNGS_MODULUS = 70000000000 [Pa]
+#
+POISSON_RATIO = 0.3
+#
 DIMENSION = 3
 #
 TIME_STEP = 10000
@@ -14,7 +18,7 @@ GRAVITY_Y = 0  [cm/s^2]
 #
 GRAVITY_Z = 0  [cm/s^2]
 #
-FLUID_DENSITY = 1.0    [g/cm^3] = 10^(-3) [kg/m^3]
+DENSITY = 1.0    [g/cm^3] = 10^(-3) [kg/m^3]
 #
 EQUATION_SOLVER = 1 (0:LU 1:BiCGSTAB)
 #

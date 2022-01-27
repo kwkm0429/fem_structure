@@ -5,11 +5,6 @@
 #include "time_measure.h"
 #include "parameter.h"
 
-/**
- * @brief      { main }
- *
- * @return     { 0 }
- */
 int main(){
 #ifdef MEASURE
 	initializeTime();

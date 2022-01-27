@@ -14,11 +14,6 @@ SimulationParameter sim_prm;
 StructureParameter structure;
 AdjacencyMatrix adj_matrix;
 
-/**
- * @brief      Reads an input data file.
- *
- * @return     void
- */
 void readNodeDataFile(){
     int loop=0, idx;
     
@@ -41,6 +36,7 @@ void readNodeDataFile(){
             structure.x               = std::vector<double>(structure.num_nodes,0);
             structure.y               = std::vector<double>(structure.num_nodes,0);
             structure.z               = std::vector<double>(structure.num_nodes,0);
+            structure.disp_all        = std::vector<double>(structure.num_nodes,0);
             structure.disp_x          = std::vector<double>(structure.num_nodes,0);
             structure.disp_y          = std::vector<double>(structure.num_nodes,0);
             structure.disp_z          = std::vector<double>(structure.num_nodes,0);
@@ -181,11 +177,6 @@ void readBoundaryDataFile(){
     std::cout<<"Succeeded in reading " << sim_prm.bc_filename <<std::endl;
 }
 
-/**
- * @brief      Reads a parameter data file.
- *
- * @return     { description_of_the_return_value }
- */
 void readParameterDataFile(){
     /* read from "simulation.prm" */
     std::ifstream ifsb(sim_prm.input_data_dirname + sim_prm.params_filename);
@@ -201,8 +192,14 @@ void readParameterDataFile(){
         while(std::getline(ss,item,' ')&& !item.empty()){
             list.push_back(item);
         }
+
+        if(list[0] == "YOUNGS_MODULUS"){
+            structure.youngs_modulus = std::stod(list[2]);
         
-        if(list[0] == "DIMENSION"){
+        }else if(list[0] == "POISSON_RATIO"){
+            structure.poisson_ratio = std::stod(list[2]);
+
+        }else if(list[0] == "DIMENSION"){
             sim_prm.dim = std::stoi(list[2]);
 
         }else if(list[0] == "TIME_STEP"){
@@ -217,7 +214,7 @@ void readParameterDataFile(){
         }else if(list[0] == "VISCOSITY"){
             structure.visc = std::stod(list[2]);
 
-        }else if(list[0] == "FLUID_DENSITY"){
+        }else if(list[0] == "DENSITY"){
             structure.density = std::stod(list[2]);
 
         }else if(list[0] == "GRAVITY_X"){
@@ -241,9 +238,6 @@ void readParameterDataFile(){
     std::cout<<"Succeeded in reading " << sim_prm.params_filename <<std::endl;
 }
 
-/**
- * @brief      Sets the initial state.
- */
 void initField(){
     int i;
     for(i=0;i<structure.num_nodes;i++){
@@ -262,9 +256,6 @@ void initField(){
     }
 }
 
-/**
- * @brief      Initializes the adjacency matrix.
- */
 void initAdjMatrix(){
     int i, j, k, l, node_id1, node_id2;
     bool connected = false;
