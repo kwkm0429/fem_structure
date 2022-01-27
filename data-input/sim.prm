@@ -1,0 +1,20 @@
+# Simulation parameters
+#
+DIMENSION = 3
+#
+TIME_STEP = 10000
+#
+OUTPUT_INTERVAL = 10
+#
+DT = 0.000125  [s]
+#
+GRAVITY_X = 0  [cm/s^2] 
+#
+GRAVITY_Y = 0  [cm/s^2]
+#
+GRAVITY_Z = 0  [cm/s^2]
+#
+FLUID_DENSITY = 1.0    [g/cm^3] = 10^(-3) [kg/m^3]
+#
+EQUATION_SOLVER = 1 (0:LU 1:BiCGSTAB)
+#
