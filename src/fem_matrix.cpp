@@ -1,9 +1,3 @@
-/*
-* @Author: Kosuke Kawakami
-* @Date:   2019-08-15 16:35:38
-* @Last Modified by:   Kosuke
-* @Last Modified time: 2020-09-25 18:06:02
-*/
 #include <complex>
 #include <cmath>
 #include <iostream>

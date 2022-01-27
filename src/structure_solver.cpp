@@ -1,9 +1,3 @@
-/*
-* @Author: Kosuke Kawakami
-* @Date:   2019-08-16 13:45:59
-* @Last Modified by:   Kosuke
-* @Last Modified time: 2020-08-23 11:23:41
-*/
 #include <iostream>
 #include <vector>
 #include <fstream>

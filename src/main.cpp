@@ -1,10 +1,3 @@
-/*
-* @Author: Kosuke Kawakami
-* @Date:   2019-08-06 16:08:01
-* @Last Modified by:   Kosuke
-* @Last Modified time: 2020-08-23 10:58:48
-*/
-
 #include <iostream>
 #include <fstream>
 
