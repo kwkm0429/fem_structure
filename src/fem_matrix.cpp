@@ -11,6 +11,7 @@
 #include "time_measure.h"
 #include "eigen_solver.h"
 #include "matrix_calc.h"
+#include "debug.h"
 
 void calcJacobian(
 	int k, 
@@ -71,12 +72,29 @@ void calcJacobian(
 	}
 }
 
+void calcStiffnessMatrix(
+	std::vector<std::vector<double>>& K,
+	std::vector<std::vector<double>>& B,
+	std::vector<std::vector<double>>& D){
+	int i, j;
+	std::vector<std::vector<double>> temp = std::vector< std::vector<double> >(8,std::vector<double>(3,0));
+	std::vector<std::vector<double>> Bt = std::vector< std::vector<double> >(8,std::vector<double>(3,0));
+	for(i=0;i<8;i++){
+		for(j=0;j<3;j++){
+			Bt[i][j] = B[j][i];
+		}
+	}
+	multi_mat_mat(temp, Bt, D);
+	multi_mat_mat(K, temp, B);
+}
+
 void calcElementMatrix2Dquad(){
 #ifdef MEASURE
 	double time_start = elapsedTime();
 #endif
-	int node_id=0, node_id1 = 0, node_id2 = 0, node_id3 = 0, node_id4 = 0;
+	int node_id1 = 0, node_id2 = 0, node_id3 = 0, node_id4 = 0;
 	int i = 0, j = 0, k = 0, l = 0, ne1 = 0, ne2 = 0, ne3 = 0, ne4 = 0;
+	std::vector<int> node_id = std::vector<int>(4,0);
 	std::vector<double> x     = std::vector<double>(4,0);
 	std::vector<double> y     = std::vector<double>(4,0);
 	std::vector<double> dN_dx = std::vector<double>(16,0);
@@ -89,10 +107,9 @@ void calcElementMatrix2Dquad(){
 	std::vector<std::vector<double>> stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));
 	// K matrix
 	std::vector<std::vector<double>> stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0));
-	std::vector<std::vector<double>> temp_matrix = std::vector< std::vector<double> >(8,std::vector<double>(3,0));
 
 	double mass = 0, stiff = 0, damping = 0;
-	bool connect_check = false;
+	int connect_check = 0;
 	int size_of_column_nonzero = 0;
 	// fluid local variables for OpenMP parallel
 	std::vector<std::vector<double> > f_element_func = structure.element_func;
@@ -117,9 +134,9 @@ void calcElementMatrix2Dquad(){
 			elem_id = structure.colored_elem_id[color][i];
 			// calculate stabilization parameter in element i
 			for(j=0;j<4;j++){
-				node_id = structure.element_node_table[elem_id][j];
-				x[j] = structure.x[node_id];
-				y[j] = structure.y[node_id];
+				node_id[j] = structure.element_node_table[elem_id][j];
+				x[j] = structure.x[node_id[j]];
+				y[j] = structure.y[node_id[j]];
 			}		
 			for(k=0;k<4;k++){
 				calcJacobian(k,J,x,y,N,dN_dx,dN_dy); // calculate jaccobian and basis function
@@ -161,35 +178,26 @@ void calcElementMatrix2Dquad(){
 				}
 			}
 			// calculate element stiffness matrix
-			for(ne1=0;ne1<4;ne1++){
-				for(ne2=0;ne2<4;ne2++){
-					// initialize
-					mass = stiff = damping = 0;
-					// get node idx
-					node_id1 = structure.element_node_table[elem_id][ne1];
-					node_id2 = structure.element_node_table[elem_id][ne2];
-					//gauss quadrature
-					for(k=0;k<4;k++){
-						mass += N[k*4+ne1] * N[k*4+ne2] * J[k];
-					}
-					// Storage value with connectivity format to set sparse matrix efficiently
-					// adj_matrix.~[i][j] (i: idx of row, j: order of column with nonzero element at row i)
-					// = value of element at (i, adj_matrix.idx[i][j])
-					connect_check = false;
-					size_of_column_nonzero = adj_matrix.idx[node_id1].size();
-					for(j=0;j<size_of_column_nonzero;j++){
-						if(connect_check)continue;
-						if(adj_matrix.idx[node_id1][j] == node_id2){
-							connect_check = true;
-							adj_matrix.mass[node_id1][j]      += mass;
-							adj_matrix.stiff[node_id1][j]     += stiff;
-							adj_matrix.damping[node_id1][j]   += damping;
+			calcStiffnessMatrix(stiff_matrix, strain_disp_matrix, stress_strain_matrix);
+			// set element matrix to adjacency matrix format
+			for(j=0;j<4;j++){
+				connect_check = 0;
+				size_of_column_nonzero = adj_matrix.idx[node_id[j]].size()*sim_prm.dim;
+				for(k=0;k<4;k++){
+					for(l=0;l<size_of_column_nonzero;l++){
+						if(adj_matrix.idx[node_id[j]][l] == node_id[k]){
+							connect_check++;
+							adj_matrix.stiff[node_id[j]*2][l*2]     += stiff_matrix[j*2][k*2];
+							adj_matrix.stiff[node_id[j]*2][l*2+1]   += stiff_matrix[j*2][k*2+1];
+							adj_matrix.stiff[node_id[j]*2+1][l*2]   += stiff_matrix[j*2+1][k*2];
+							adj_matrix.stiff[node_id[j]*2+1][l*2+1] += stiff_matrix[j*2+1][k*2+1];
+							break;
 						}
 					}
-					if(!connect_check){
-						std::cerr<<"connectivity error"<<std::endl;
-						exit(1);
-					}
+				}
+				if(connect_check != 4){
+					std::cerr<<"connectivity error: "<<connect_check<<std::endl;
+					exit(1);
 				}
 			}
 		}
@@ -200,12 +208,14 @@ void calcElementMatrix2Dquad(){
 	structure.element_func = f_element_func;
 	std::cout<<"Matrix nonzero element num : "<<sim_prm.num_nonzero<<std::endl;
 	std::cout<<"Matrix   total element num : "<<(long long)(structure.num_nodes)*structure.num_nodes<<"\n"<<std::endl;
-	std::cout<<"Calculated matrix for fluid\n"<<std::endl;
 #ifdef MEASURE
 	double time_end = elapsedTime();
 	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);
 	ofs<<"calcElementMatrix2Dquad() : "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
 	ofs.close();
+#endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
 #endif
 }
 
@@ -364,6 +374,9 @@ void calcElementMatrix3Dtetra(){
 	ofs<<"calcElementMatrix3Dtetra(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
 	ofs.close();
 #endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 void calcBoundaryShapeFunction(){
@@ -415,6 +428,9 @@ void calcBoundaryShapeFunction(){
 		pos_y.clear();
 		pos_z.clear();
 	}
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 /**
@@ -487,9 +503,11 @@ void coloringElements(){
 		int color = color_elem[i];
 		structure.colored_elem_id[color].push_back(i);
 	}
-	std::cout<<"Succeeded Coloring"<<std::endl;
-	std::cout<<"Number of colors: "<<max_color<<std::endl;
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+    std::cout<<"Number of colors: "<<max_color<<std::endl;
 	for(i=0;i<max_color;i++){
 		std::cout<<"Color id: "<<i<<" "<<"Number of nodes: "<<structure.colored_elem_id[i].size()<<std::endl;
 	}
+#endif
 }

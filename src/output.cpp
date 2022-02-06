@@ -8,10 +8,11 @@
 #include "parameter.h"
 #include "output.h"
 #include "matrix_calc.h"
+#include "debug.h"
 
 void outputDispVtkFile(int number){
 	int i,j;
-	char head[16]="velocity";
+	char head[16]="disp";
 	char end[16]=".vtk";
 	char filename[256];
 	sprintf(filename,"%s%d%s",head,number,end);
@@ -49,7 +50,9 @@ void outputDispVtkFile(int number){
 		ofs<<std::sqrt(structure.disp_x[i]*structure.disp_x[i]+structure.disp_y[i]*structure.disp_y[i]+structure.disp_z[i]*structure.disp_z[i])<<std::endl;
 	}
 	ofs.close();
-	std::cout<<"Succeeded in making "<<filename<<"\n"<<std::endl;
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 void outputParameterDataFile(){
@@ -63,7 +66,6 @@ void outputParameterDataFile(){
 	ofs<<"GRAVITY_X = "<<sim_prm.gravity_x<<std::endl;
 	ofs<<"GRAVITY_Y = "<<sim_prm.gravity_y<<std::endl;
 	ofs<<"GRAVITY_Z = "<<sim_prm.gravity_z<<std::endl;
-	ofs<<"VISCOSITY = "<<structure.visc<<std::endl;
 	ofs<<"FLUID_DENSITY = "<<structure.density<<std::endl;
 	ofs<<"EQUATION_SOLVER = "<<sim_prm.eq_solver_opt<<std::endl;
 	char* num_threads = getenv("OMP_NUM_THREADS");
@@ -72,7 +74,8 @@ void outputParameterDataFile(){
 	}else{
 		ofs<<"OMP_NUM_THREADS = NULL"<<std::endl;
 	}
-	std::cout<<"Succeeded in making "<<filename<<"\n"<<std::endl;
-
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 	ofs.close();
 }

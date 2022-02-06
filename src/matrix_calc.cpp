@@ -46,6 +46,9 @@ void multi_mat_mat(
 
     if(res.size() != mat_left.size() || res[0].size() != mat_right[0].size() || mat_left[0].size() != mat_right.size()){
         std::cerr<<"matrix size error"<<std::endl;
+        std::cout<<res.size()<<"="<<mat_left.size()<<std::endl;
+        std::cout<<res[0].size()<<"="<<mat_right[0].size()<<std::endl;
+        std::cout<<mat_left[0].size()<<"="<<mat_right.size()<<std::endl;
         return;
     }
     

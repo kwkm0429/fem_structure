@@ -4,6 +4,7 @@
 
 #include "eigen_solver.h"
 #include "time_measure.h"
+#include "debug.h"
 
 static StructureMatrix s_matrix;
 
@@ -12,22 +13,21 @@ void initSparseMatrix(){
 	double time_start = elapsedTime();
 #endif
     // initialize matrices
-	s_matrix.mass.resize(structure.num_nodes, structure.num_nodes);
-	s_matrix.stiff.resize(structure.num_nodes, structure.num_nodes);
-	s_matrix.damping.resize(structure.num_nodes, structure.num_nodes);
-	s_matrix.Dmat.resize(structure.num_nodes, structure.num_nodes);
-	s_matrix.Bmat.resize(structure.num_nodes, structure.num_nodes);
+	s_matrix.mass.resize(structure.num_nodes*sim_prm.dim, structure.num_nodes*sim_prm.dim);
+	s_matrix.stiff.resize(structure.num_nodes*sim_prm.dim, structure.num_nodes*sim_prm.dim);
+	s_matrix.damping.resize(structure.num_nodes*sim_prm.dim, structure.num_nodes*sim_prm.dim);
 	// reserve memory
 	s_matrix.mass.reserve(sim_prm.num_nonzero);
 	s_matrix.stiff.reserve(sim_prm.num_nonzero);
 	s_matrix.damping.reserve(sim_prm.num_nonzero);
-	s_matrix.Dmat.reserve(sim_prm.num_nonzero);
-	s_matrix.Bmat.reserve(sim_prm.num_nonzero);
 #ifdef MEASURE
 	double time_end = elapsedTime();
 	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);
 	ofs<<"initSparseMatrix(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
 	ofs.close();
+#endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
 #endif
 }
 
@@ -36,14 +36,13 @@ void freeSparseMmatrix(){
 	s_matrix.mass.resize(0, 0);
 	s_matrix.stiff.resize(0, 0);
 	s_matrix.damping.resize(0, 0);
-	s_matrix.Dmat.resize(0, 0);
-	s_matrix.Bmat.resize(0, 0);
 	// free memory
 	s_matrix.mass.data().squeeze();
 	s_matrix.stiff.data().squeeze();
 	s_matrix.damping.data().squeeze();
-	s_matrix.Dmat.data().squeeze();
-	s_matrix.Bmat.data().squeeze();
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 void setSparseMatrix(){
@@ -56,11 +55,10 @@ void setSparseMatrix(){
 		int size_of_column_nonzero = adj_matrix.idx[i].size();
 		for(j=0;j<size_of_column_nonzero;j++){
 			nodeIdx = adj_matrix.idx[i][j];
-			s_matrix.mass.insert(i, nodeIdx)    = adj_matrix.mass[i][j];
-			s_matrix.stiff.insert(i, nodeIdx)   = adj_matrix.stiff[i][j];
-			s_matrix.damping.insert(i, nodeIdx) = adj_matrix.damping[i][j];
-			s_matrix.Dmat.insert(i, nodeIdx) = adj_matrix.stress_strain[i][j];
-			s_matrix.Bmat.insert(i, nodeIdx) = adj_matrix.strain_disp[i][j];
+			s_matrix.stiff.insert(i*2, nodeIdx*2) = adj_matrix.stiff[i*2][j*2];
+			s_matrix.stiff.insert(i*2, nodeIdx*2+1) = adj_matrix.stiff[i*2][j*2+1];
+			s_matrix.stiff.insert(i*2+1, nodeIdx*2) = adj_matrix.stiff[i*2+1][j*2];
+			s_matrix.stiff.insert(i*2+1, nodeIdx*2+1) = adj_matrix.stiff[i*2+1][j*2+1];
 		}
 	}
 #ifdef MEASURE
@@ -69,90 +67,39 @@ void setSparseMatrix(){
 	ofs<<"setSparseMatrix(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
 	ofs.close();
 #endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
-void setBoundaryCondition(SpMat& A, Vector& b, ParameterID param_id){
+void setBoundaryCondition2D(SpMat& A, Vector& b){
 #ifdef MEASURE
 	double time_start = elapsedTime();
 #endif
 	int i;
 
 	for(i=0;i<structure.num_nodes;i++){
-		if(param_id == VX){
-			if(structure.is_dirichlet_vx[i]){
-				// Dirichlet Boundary Condition
-				b(i,0) = structure.dirichlet_vx[i] * structure.density;
-			}else{
-				// Neumann Boundary Condition
-				b(i,0) += (structure.neumann_vx[i][0] + structure.neumann_vx[i][1] + structure.neumann_vx[i][2]) * structure.visc / structure.density * structure.boundary_shape_function[i];
-			}
-		}else if(param_id == VY){
-			if(structure.is_dirichlet_vy[i]){
-				// Dirichlet Boundary Condition
-				b(i,0) = structure.dirichlet_vy[i] * structure.density;
-			}else{
-				// Neumann Boundary Condition
-				b(i,0) += (structure.neumann_vy[i][0] + structure.neumann_vy[i][1] + structure.neumann_vy[i][2]) * structure.visc / structure.density * structure.boundary_shape_function[i];
-			}
-		}else if(param_id == VZ){
-			if(structure.is_dirichlet_vz[i]){
-				// Dirichlet Boundary Condition
-				b(i,0) = structure.dirichlet_vz[i] * structure.density;
-
-			}else{
-				// Neumann Boundary Condition
-				b(i,0) += (structure.neumann_vz[i][0] + structure.neumann_vz[i][1] + structure.neumann_vz[i][2]) * structure.visc / structure.density * structure.boundary_shape_function[i];
-			}
-		}else if(param_id == PRES){
-			if(structure.is_dirichlet_pressure[i]){
-				// Dirichlet Boundary Condition
-				b(i,0) = structure.dirichlet_pressure[i];
-			}else{
-				// Neumann Boundary Condition
-				b(i,0) += (structure.neumann_pressure[i][0] + structure.neumann_pressure[i][1] + structure.neumann_pressure[i][2]) * structure.boundary_shape_function[i];
-			}
-		}else{
-			std::cout<<"Error: "<<param_id<<" , ParameterID error in setBoundaryCondition()"<<std::endl;
-			exit(1);
-		}
+		// Dirichlet Boundary Condition
+		if(structure.is_dirichlet_dx[i]) b(i*2,0)    = structure.dirichlet_dx[i];
+		if(structure.is_dirichlet_dy[i]) b(i*2+1, 0) = structure.dirichlet_dy[i];
+		// Neumann Boundary Condition
+		b(i*2,0)   += structure.force_x[i];
+		b(i*2+1,0) += structure.force_y[i];
 	}
 	for(i=0;i<A.outerSize();++i){
 		for(SpMat::InnerIterator it(A, i); it; ++it){
-			if(param_id == VX){
-				if(structure.is_dirichlet_vx[it.row()]){
-					if(i == it.col()){
-						it.valueRef() = 1;
-					}else{
-						it.valueRef() = 0;
-					}
+			if(structure.is_dirichlet_dx[it.row()]){
+				if(i == it.col()*2){
+					it.valueRef() = 1;
+				}else{
+					it.valueRef() = 0;
 				}
-			}else if(param_id == VY){
-				if(structure.is_dirichlet_vy[it.row()]){
-					if(i == it.col()){
-						it.valueRef() = 1;
-					}else{
-						it.valueRef() = 0;
-					}
+			}else if(structure.is_dirichlet_dy[it.row()]){
+				if(i == it.col()*2+1){
+					it.valueRef() = 1;
+				}else{
+					it.valueRef() = 0;
 				}
-			}else if(param_id == VZ){
-				if(structure.is_dirichlet_vz[it.row()]){
-					if(i == it.col()){
-						it.valueRef() = 1;
-					}else{
-						it.valueRef() = 0;
-					}
-				}
-			}else if(param_id == PRES){
-				if(structure.is_dirichlet_pressure[it.row()]){
-					if(i == it.col()){
-						it.valueRef() = 1;
-					}else{
-						it.valueRef() = 0;
-					}
-				}
-			}else{
-				std::cout<<"Error: "<<param_id<<" , ParameteriD error in setBoundaryCondition()"<<std::endl;
-				exit(1);
 			}
 		}
 	}
@@ -162,26 +109,31 @@ void setBoundaryCondition(SpMat& A, Vector& b, ParameterID param_id){
 	ofs<<"setBoundaryCondition(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
 	ofs.close();
 #endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
-void solveStaticAnalysis(){
+void solveLinearEquation2D(){
 	int i;
 	bool is_solved = true;
-	Vector rhs = Vector::Zero(structure.num_nodes);
-	Vector Uvec = Vector::Zero(structure.num_nodes);
-	SpMat B_trans(structure.num_nodes, structure.num_nodes);
-	B_trans = s_matrix.Bmat.transpose();
-
-	// create stiffness matrix
-	s_matrix.stiff = B_trans * s_matrix.Dmat * s_matrix.Bmat;
+	Vector rhs = Vector::Zero(structure.num_nodes*2);
+	Vector Uvec = Vector::Zero(structure.num_nodes*2);
 
 	// set boundary condition
-	setBoundaryCondition(s_matrix.stiff, rhs, VX);
+	setBoundaryCondition2D(s_matrix.stiff, rhs);
+
+	// check matrix and rhs
+	std::cout<<"check stiffness matrix"<<std::endl;
+	std::cout<<s_matrix.stiff<<std::endl;
+
+	std::cout<<"check rhs vector"<<std::endl;
+	std::cout<<rhs<<std::endl;
 
 	// solve
 	is_solved = eigenSolver(s_matrix.stiff, Uvec, rhs);
 
-	for(i=0;i<structure.num_nodes;i++){
+	for(i=0;i<structure.num_nodes*2;i++){
 		structure.disp_all[i] = Uvec(i,0);
 	}
 
@@ -191,6 +143,9 @@ void solveStaticAnalysis(){
 		std::cout<<"Failed to solveStaticAnalysis\n"<<std::endl;
 		exit(1);
 	}
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 bool eigenSolver(SpMat& A, Vector& x, Vector& b){
@@ -218,6 +173,9 @@ bool eigenSolver(SpMat& A, Vector& x, Vector& b){
 	ofs<<"eigenSolver(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
 	ofs.close();
 #endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 	return ret;
 }
 
@@ -235,6 +193,9 @@ bool eigenLU(SpMat& A, Vector& x, Vector& b){
 		std::cout<<"Failed solver LU"<<std::endl;
 		return false;
 	}
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 	return true;
 }
 
@@ -257,5 +218,8 @@ bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b){
 	//std::cout << "#nbThreads:       " << omp_get_max_threads() <<std::endl;
 	std::cout << "#iterations:     " << solver.iterations() << std::endl;
 	std::cout << "estimated error: " << solver.error()      << std::endl;
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 	return true;
 }

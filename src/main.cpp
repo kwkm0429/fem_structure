@@ -10,8 +10,8 @@ int main(){
 	initializeTime();
 #endif
 
-	solve();
-	
+	executeStaticAnalysis();
+
 #ifdef MEASURE
 	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);
 	ofs<<"SIMULATION-ENTIRE-TIME: "<<elapsedTime()/1000<<" [s]"<<std::endl;

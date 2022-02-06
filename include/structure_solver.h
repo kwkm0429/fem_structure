@@ -1,4 +1,3 @@
 #pragma once
 
-void solve(void);
-void solveStaticAnalysis(void);
+void executeStaticAnalysis(void);

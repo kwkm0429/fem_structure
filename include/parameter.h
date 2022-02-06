@@ -29,9 +29,7 @@ struct SimulationParameter{
 struct StructureParameter{
 	int num_nodes;
 	int num_elements;
-	double visc;
 	double density;
-	double reynolds;
 	double youngs_modulus;
 	double poisson_ratio;
 
@@ -46,9 +44,9 @@ struct StructureParameter{
 	// boundary conditions
 	std::vector<bool> is_boundary;
 	std::vector<double> boundary_shape_function;
-	std::vector<bool> is_dirichlet_vx, is_dirichlet_vy, is_dirichlet_vz, is_dirichlet_pressure;
-	std::vector<double> dirichlet_vx, dirichlet_vy, dirichlet_vz, dirichlet_pressure;
-	std::vector<std::vector<double>> neumann_vx, neumann_vy, neumann_vz, neumann_pressure;
+	std::vector<bool> is_dirichlet_dx, is_dirichlet_dy, is_dirichlet_dz;
+	std::vector<double> dirichlet_dx, dirichlet_dy, dirichlet_dz;
+	std::vector<double> force_x, force_y, force_z;
 	// basis function
 	std::vector< std::vector<double> > element_func;
 	// coloring
@@ -57,7 +55,6 @@ struct StructureParameter{
 
 struct AdjacencyMatrix{
 	std::vector< std::vector<int> > idx;
-	std::vector< std::vector<double> > strain_disp, stress_strain;
 	std::vector< std::vector<double> > mass, stiff, damping;
 };
 

@@ -14,15 +14,13 @@ typedef Eigen::VectorXd Vector;
 typedef Eigen::MatrixXd Matrix;
 
 struct StructureMatrix{
-	SpMat Dmat, Bmat;
 	SpMat mass, stiff, damping;
 };
 
 enum ParameterID{
-	VX = 0,
-	VY = 1,
-	VZ = 2,
-	PRES = 3
+	DX = 0,
+	DY = 1,
+	DZ = 2,
 };
 
 // manage sparse matrix
@@ -30,7 +28,9 @@ void initSparseMatrix(void);
 void freeSparseMmatrix(void);
 void setSparseMatrix(void);
 // boundary condition
-void setBoundaryCondition(SpMat&, Vector&, ParameterID);
+void setBoundaryCondition2D(SpMat&, Vector&, ParameterID);
+// solve linear equation
+void solveLinearEquation2D(void);
 // linear solver
 bool eigenSolver(SpMat& A, Vector& x, Vector& b);
 bool eigenLU(SpMat& A, Vector& x, Vector& b);

@@ -8,6 +8,7 @@
 
 #include "parameter.h"
 #include "init.h"
+#include "debug.h"
 
 /*  parameter setting */
 SimulationParameter sim_prm;
@@ -36,7 +37,7 @@ void readNodeDataFile(){
             structure.x               = std::vector<double>(structure.num_nodes,0);
             structure.y               = std::vector<double>(structure.num_nodes,0);
             structure.z               = std::vector<double>(structure.num_nodes,0);
-            structure.disp_all        = std::vector<double>(structure.num_nodes,0);
+            structure.disp_all        = std::vector<double>(structure.num_nodes*2,0);
             structure.disp_x          = std::vector<double>(structure.num_nodes,0);
             structure.disp_y          = std::vector<double>(structure.num_nodes,0);
             structure.disp_z          = std::vector<double>(structure.num_nodes,0);
@@ -53,20 +54,17 @@ void readNodeDataFile(){
             structure.sheer_strain_yz = std::vector<double>(structure.num_nodes,0);
             structure.sheer_strain_zx = std::vector<double>(structure.num_nodes,0);
 
-            structure.dirichlet_vx          = std::vector<double>(structure.num_nodes,0);
-            structure.dirichlet_vy          = std::vector<double>(structure.num_nodes,0);
-            structure.dirichlet_vz          = std::vector<double>(structure.num_nodes,0);
-            structure.dirichlet_pressure    = std::vector<double>(structure.num_nodes,0);
-            structure.neumann_vx            = std::vector<std::vector<double>>(structure.num_nodes, std::vector<double>(3,0));
-            structure.neumann_vy            = std::vector<std::vector<double>>(structure.num_nodes, std::vector<double>(3,0));
-            structure.neumann_vz            = std::vector<std::vector<double>>(structure.num_nodes, std::vector<double>(3,0));
-            structure.neumann_pressure      = std::vector<std::vector<double>>(structure.num_nodes, std::vector<double>(3,0));
-            structure.is_dirichlet_vx       = std::vector<bool>(structure.num_nodes,false);
-            structure.is_dirichlet_vy       = std::vector<bool>(structure.num_nodes,false);
-            structure.is_dirichlet_vz       = std::vector<bool>(structure.num_nodes,false);
-            structure.is_dirichlet_pressure = std::vector<bool>(structure.num_nodes,false);
+            structure.dirichlet_dx          = std::vector<double>(structure.num_nodes,0);
+            structure.dirichlet_dy          = std::vector<double>(structure.num_nodes,0);
+            structure.dirichlet_dz          = std::vector<double>(structure.num_nodes,0);
+            structure.is_dirichlet_dx       = std::vector<bool>(structure.num_nodes,false);
+            structure.is_dirichlet_dy       = std::vector<bool>(structure.num_nodes,false);
+            structure.is_dirichlet_dz       = std::vector<bool>(structure.num_nodes,false);
             structure.is_boundary           = std::vector<bool>(structure.num_nodes,false); 
             structure.boundary_shape_function = std::vector<double>(structure.num_nodes,0);
+            structure.force_x               = std::vector<double>(structure.num_nodes,0);
+            structure.force_y               = std::vector<double>(structure.num_nodes,0);
+            structure.force_z               = std::vector<double>(structure.num_nodes,0);
         }
         else if(loop>=1 && loop<=structure.num_nodes){
             /* coordinate of nodes */
@@ -81,7 +79,10 @@ void readNodeDataFile(){
         }
         loop++;
     }
-    std::cout<<"Succeeded in reading " << sim_prm.node_filename <<std::endl;
+#ifdef DEBUG
+    debugPrintInfo("Input < "+sim_prm.input_data_dirname+sim_prm.node_filename);
+    debugPrintInfo(__func__);
+#endif
 }
 
 void readElemDataFile(){
@@ -117,11 +118,14 @@ void readElemDataFile(){
         }
         loop++;
     }
-    std::cout<<"Succeeded in reading " << sim_prm.elem_filename <<std::endl;
+#ifdef DEBUG
+    debugPrintInfo("Input < "+sim_prm.input_data_dirname+sim_prm.elem_filename);
+    debugPrintInfo(__func__);
+#endif
 }
 
 void readBoundaryDataFile(){
-    int i, loop = 0, node_id = 0;
+    int i, loop = 0, node_id = 0, list_num=0;
     std::ifstream ifs(sim_prm.input_data_dirname + sim_prm.bc_filename);
     std::string str;
     if (ifs.fail()) {
@@ -138,35 +142,25 @@ void readBoundaryDataFile(){
         if(loop == 0){
             // number of nodes is written
         }else if(loop>=1 && loop<=structure.num_nodes){
-            if(list.size()!=21){
+            if(list.size()!=11){
                 std::cout<<"Error: numbers in one line"<<std::endl;
                 exit(1);
             }
             node_id = std::stoi(list[0]);
+            list_num = std::stoi(list[1]);
 
-            structure.is_dirichlet_vx[node_id]        = std::stoi(list[1]);
-            structure.dirichlet_vx[node_id]           = std::stod(list[2]);
-            structure.is_dirichlet_vy[node_id]        = std::stoi(list[3]);
-            structure.dirichlet_vy[node_id]           = std::stod(list[4]);
-            structure.is_dirichlet_vz[node_id]        = std::stoi(list[5]);
-            structure.dirichlet_vz[node_id]           = std::stod(list[6]);
-            structure.is_dirichlet_pressure[node_id]  = std::stoi(list[7]);
-            structure.dirichlet_pressure[node_id]     = std::stod(list[8]);
+            structure.is_dirichlet_dx[node_id]        = std::stoi(list[2]);
+            structure.dirichlet_dx[node_id]           = std::stod(list[3]);
+            structure.is_dirichlet_dy[node_id]        = std::stoi(list[4]);
+            structure.dirichlet_dy[node_id]           = std::stod(list[5]);
+            structure.is_dirichlet_dz[node_id]        = std::stoi(list[6]);
+            structure.dirichlet_dz[node_id]           = std::stod(list[7]);
+            structure.force_x[node_id] = std::stod(list[8]);
+            structure.force_y[node_id] = std::stod(list[9]);
+            structure.force_z[node_id] = std::stod(list[10]);
 
-            for(i=0;i<3;i++){
-                structure.neumann_vx[node_id][i]    = std::stod(list[9+i]);
-            }
-            for(i=0;i<3;i++){
-                structure.neumann_vy[node_id][i]    = std::stod(list[12+i]);
-            }
-            for(i=0;i<3;i++){
-                structure.neumann_vz[node_id][i]    = std::stod(list[15+i]);
-            }
-            for(i=0;i<3;i++){
-                structure.neumann_pressure[node_id][i]    = std::stod(list[18+i]);
-            }
             // check if the node is on boundary
-            for(int i=1;i<21;i++){
+            for(int i=1;i<11;i++){
                 if(list[i]!="0"){
                     structure.is_boundary[node_id] = true;
                 }
@@ -174,7 +168,10 @@ void readBoundaryDataFile(){
         }
         loop++;
     }
-    std::cout<<"Succeeded in reading " << sim_prm.bc_filename <<std::endl;
+#ifdef DEBUG
+    debugPrintInfo("Input < "+sim_prm.input_data_dirname + sim_prm.bc_filename);
+    debugPrintInfo(__func__);
+#endif
 }
 
 void readParameterDataFile(){
@@ -211,9 +208,6 @@ void readParameterDataFile(){
         }else if(list[0] == "DT"){
             sim_prm.dt = std::stod(list[2]);
 
-        }else if(list[0] == "VISCOSITY"){
-            structure.visc = std::stod(list[2]);
-
         }else if(list[0] == "DENSITY"){
             structure.density = std::stod(list[2]);
 
@@ -232,28 +226,29 @@ void readParameterDataFile(){
         }else{
             // std::cout<<list[0]<<std::endl;
         }
-        structure.reynolds = structure.density / structure.visc;
     }
-
-    std::cout<<"Succeeded in reading " << sim_prm.params_filename <<std::endl;
+#ifdef DEBUG
+    debugPrintInfo("Input < "+sim_prm.input_data_dirname + sim_prm.params_filename);
+    debugPrintInfo(__func__);
+#endif
 }
 
 void initField(){
     int i;
     for(i=0;i<structure.num_nodes;i++){
-        if(structure.is_dirichlet_vx[i]){
+        if(structure.is_dirichlet_dx[i]){
         }else{
         }
-        if(structure.is_dirichlet_vy[i]){
+        if(structure.is_dirichlet_dy[i]){
         }else{
         }
-        if(structure.is_dirichlet_vz[i]){
-        }else{
-        }
-        if(structure.is_dirichlet_pressure[i]){
+        if(structure.is_dirichlet_dz[i]){
         }else{
         }
     }
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 void initAdjMatrix(){
@@ -263,9 +258,9 @@ void initAdjMatrix(){
     // Adjecency matrix format used to assemble element stiffness matrix
     // adj_matrix.idx[i][j] := index of node adjuscent to i (j is order)
     adj_matrix.idx        = std::vector< std::vector<int> >(structure.num_nodes);
-    adj_matrix.mass       = std::vector< std::vector<double> >(structure.num_nodes);
-    adj_matrix.stiff      = std::vector< std::vector<double> >(structure.num_nodes);
-    adj_matrix.damping    = std::vector< std::vector<double> >(structure.num_nodes);
+    adj_matrix.mass       = std::vector< std::vector<double> >(structure.num_nodes*sim_prm.dim);
+    adj_matrix.stiff      = std::vector< std::vector<double> >(structure.num_nodes*sim_prm.dim);
+    adj_matrix.damping    = std::vector< std::vector<double> >(structure.num_nodes*sim_prm.dim);
 
     sim_prm.num_nonzero = 0;
     for(i=0;i<structure.num_elements;i++){
@@ -286,14 +281,23 @@ void initAdjMatrix(){
             }
         }
     }
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 void allocateAdjMatrix(){
     int i, size_of_column_nonzero;
     for(i=0;i<structure.num_nodes;i++){
-        size_of_column_nonzero = adj_matrix.idx[i].size();
-        adj_matrix.mass[i]        = std::vector<double>(size_of_column_nonzero, 0);
-        adj_matrix.stiff[i]       = std::vector<double>(size_of_column_nonzero, 0);
-        adj_matrix.damping[i]     = std::vector<double>(size_of_column_nonzero, 0);
+        size_of_column_nonzero = adj_matrix.idx[i].size()*sim_prm.dim;
+        adj_matrix.mass[i*2]        = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.mass[i*2+1]      = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.stiff[i*2]       = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.stiff[i*2+1]     = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.damping[i*2]     = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.damping[i*2+1]   = std::vector<double>(size_of_column_nonzero, 0);
     }
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
