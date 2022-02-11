@@ -76,15 +76,15 @@ void setBoundaryCondition2D(SpMat& A, Vector& b){
 #ifdef MEASURE
 	double time_start = elapsedTime();
 #endif
-	int i;
+	int i, j;
 
 	for(i=0;i<structure.num_nodes;i++){
-		// Dirichlet Boundary Condition
-		if(structure.is_dirichlet_dx[i]) b(i*2,0)    = structure.dirichlet_dx[i];
-		if(structure.is_dirichlet_dy[i]) b(i*2+1, 0) = structure.dirichlet_dy[i];
 		// Neumann Boundary Condition
 		b(i*2,0)   += structure.force_x[i];
 		b(i*2+1,0) += structure.force_y[i];
+		// Dirichlet Boundary Condition
+		if(structure.is_dirichlet_dx[i])b(i*2,0)=structure.dirichlet_dx[i];
+		if(structure.is_dirichlet_dy[i])b(i*2+1,0)=structure.dirichlet_dy[i];
 	}
 	for(i=0;i<A.outerSize();++i){
 		for(SpMat::InnerIterator it(A, i); it; ++it){
@@ -129,9 +129,9 @@ void solveLinearEquation2D(){
 
 	// check matrix and rhs
 	//std::cout<<"check stiffness matrix"<<std::endl;
-	std::cout<<s_matrix.stiff<<std::endl;
+	//std::cout<<s_matrix.stiff<<std::endl;
 	//std::cout<<"check rhs vector"<<std::endl;
-	std::cout<<rhs<<std::endl;
+	//std::cout<<rhs<<std::endl;
 
 	// solve
 	is_solved = eigenSolver(s_matrix.stiff, Uvec, rhs);

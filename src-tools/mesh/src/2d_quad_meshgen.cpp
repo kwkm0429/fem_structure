@@ -107,7 +107,7 @@ void setBoundaryCondition(){
 			isDirichletVy[i]=true; DirichletVy[i]=0;
 			isDirichletVz[i]=true; DirichletVz[i]=0;
 		}
-		if(equal(NodeX[i], LENGTH_X)){
+		if(equal(NodeX[i], LENGTH_X) && equal(NodeY[i], LENGTH_Y)){
 			ForceX[i]=0;
 			ForceY[i]=-10000;
 			ForceZ[i]=0;

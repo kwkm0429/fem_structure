@@ -284,6 +284,7 @@ void initAdjMatrix(){
             }
         }
     }
+    sim_prm.num_nonzero*=2;
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
@@ -293,12 +294,12 @@ void allocateAdjMatrix(){
     int i, size_of_column_nonzero;
     for(i=0;i<structure.num_nodes;i++){
         size_of_column_nonzero = adj_matrix.idx[i].size()*sim_prm.dim;
-        adj_matrix.mass[i*2]        = std::vector<double>(size_of_column_nonzero, 0);
-        adj_matrix.mass[i*2+1]      = std::vector<double>(size_of_column_nonzero, 0);
-        adj_matrix.stiff[i*2]       = std::vector<double>(size_of_column_nonzero, 0);
-        adj_matrix.stiff[i*2+1]     = std::vector<double>(size_of_column_nonzero, 0);
-        adj_matrix.damping[i*2]     = std::vector<double>(size_of_column_nonzero, 0);
-        adj_matrix.damping[i*2+1]   = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.mass[i*2]       = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.mass[i*2+1]     = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.stiff[i*2]      = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.stiff[i*2+1]    = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.damping[i*2]    = std::vector<double>(size_of_column_nonzero, 0);
+        adj_matrix.damping[i*2+1]  = std::vector<double>(size_of_column_nonzero, 0);
     }
 #ifdef DEBUG
     debugPrintInfo(__func__);

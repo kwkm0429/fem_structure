@@ -94,6 +94,7 @@ void calcElementMatrix2Dquad(){
 #endif
 	int node_id1 = 0, node_id2 = 0, node_id3 = 0, node_id4 = 0;
 	int i = 0, j = 0, k = 0, l = 0, ne1 = 0, ne2 = 0, ne3 = 0, ne4 = 0;
+	double jaccobian = 0;
 	std::vector<int> node_id = std::vector<int>(4,0);
 	std::vector<double> x     = std::vector<double>(4,0);
 	std::vector<double> y     = std::vector<double>(4,0);
@@ -138,8 +139,10 @@ void calcElementMatrix2Dquad(){
 				x[j] = structure.x[node_id[j]];
 				y[j] = structure.y[node_id[j]];
 			}		
+			jaccobian = 0;
 			for(k=0;k<4;k++){
 				calcJacobian(k,J,x,y,N,dN_dx,dN_dy); // calculate jaccobian and basis function
+				jaccobian += std::abs(J[k]);
 			}
 			for(k=0;k<4;k++){ // nodes in the element
 				f_element_func[elem_id][k] = 0;
@@ -151,24 +154,24 @@ void calcElementMatrix2Dquad(){
 			strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0));
 			stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));
 			for(k=0;k<4;k++){ // quadrature point
-				strain_disp_matrix[0][0] += dN_dx[k*4+0] * J[k];
-				strain_disp_matrix[0][2] += dN_dx[k*4+1] * J[k];
-				strain_disp_matrix[0][4] += dN_dx[k*4+2] * J[k];
-				strain_disp_matrix[0][6] += dN_dx[k*4+3] * J[k];
+				strain_disp_matrix[0][0] += dN_dx[k*4+0];
+				strain_disp_matrix[0][2] += dN_dx[k*4+1];
+				strain_disp_matrix[0][4] += dN_dx[k*4+2];
+				strain_disp_matrix[0][6] += dN_dx[k*4+3];
 				
-				strain_disp_matrix[1][1] += dN_dy[k*4+0] * J[k];
-				strain_disp_matrix[1][3] += dN_dy[k*4+1] * J[k];
-				strain_disp_matrix[1][5] += dN_dy[k*4+2] * J[k];
-				strain_disp_matrix[1][7] += dN_dy[k*4+3] * J[k];
+				strain_disp_matrix[1][1] += dN_dy[k*4+0];
+				strain_disp_matrix[1][3] += dN_dy[k*4+1];
+				strain_disp_matrix[1][5] += dN_dy[k*4+2];
+				strain_disp_matrix[1][7] += dN_dy[k*4+3];
 
-				strain_disp_matrix[2][0] += dN_dy[k*4+0] * J[k];
-				strain_disp_matrix[2][1] += dN_dx[k*4+0] * J[k];
-				strain_disp_matrix[2][2] += dN_dy[k*4+1] * J[k];
-				strain_disp_matrix[2][3] += dN_dx[k*4+1] * J[k];
-				strain_disp_matrix[2][4] += dN_dy[k*4+2] * J[k];
-				strain_disp_matrix[2][5] += dN_dx[k*4+2] * J[k];
-				strain_disp_matrix[2][6] += dN_dy[k*4+3] * J[k];
-				strain_disp_matrix[2][7] += dN_dx[k*4+3] * J[k];
+				strain_disp_matrix[2][0] += dN_dy[k*4+0];
+				strain_disp_matrix[2][1] += dN_dx[k*4+0];
+				strain_disp_matrix[2][2] += dN_dy[k*4+1];
+				strain_disp_matrix[2][3] += dN_dx[k*4+1];
+				strain_disp_matrix[2][4] += dN_dy[k*4+2];
+				strain_disp_matrix[2][5] += dN_dx[k*4+2];
+				strain_disp_matrix[2][6] += dN_dy[k*4+3];
+				strain_disp_matrix[2][7] += dN_dx[k*4+3];
 			}
 			// plane stress
 			stress_strain_matrix = {
@@ -184,7 +187,7 @@ void calcElementMatrix2Dquad(){
 			calcStiffnessMatrix(stiff_matrix, strain_disp_matrix, stress_strain_matrix);
 			for(j=0;j<stiff_matrix.size();j++){
 				for(k=0;k<stiff_matrix[j].size();k++){
-					stiff_matrix[j][k] *= structure.thickness;
+					stiff_matrix[j][k] *= structure.thickness * jaccobian;
 				}
 			}
 			// set element matrix to adjacency matrix format
