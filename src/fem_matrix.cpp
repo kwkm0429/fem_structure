@@ -150,24 +150,27 @@ void calcElementMatrix2Dquad(){
 			}
 			strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0));
 			stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));
-			for(l=0;l<4;l++){ // quadrature point
-				strain_disp_matrix[0][0] += dN_dx[0*4+l];
-				strain_disp_matrix[0][2] += dN_dx[1*4+l];
-				strain_disp_matrix[0][4] += dN_dx[2*4+l];
-				strain_disp_matrix[0][6] += dN_dx[3*4+l];
-				strain_disp_matrix[1][1] += dN_dy[0*4+l];
-				strain_disp_matrix[1][3] += dN_dy[1*4+l];
-				strain_disp_matrix[1][5] += dN_dy[2*4+l];
-				strain_disp_matrix[1][7] += dN_dy[3*4+l];
-				strain_disp_matrix[2][0] += dN_dy[0*4+l];
-				strain_disp_matrix[2][1] += dN_dx[0*4+l];
-				strain_disp_matrix[2][2] += dN_dy[1*4+l];
-				strain_disp_matrix[2][3] += dN_dx[1*4+l];
-				strain_disp_matrix[2][4] += dN_dy[2*4+l];
-				strain_disp_matrix[2][5] += dN_dx[2*4+l];
-				strain_disp_matrix[2][6] += dN_dy[3*4+l];
-				strain_disp_matrix[2][7] += dN_dx[3*4+l];
+			for(k=0;k<4;k++){ // quadrature point
+				strain_disp_matrix[0][0] += dN_dx[k*4+0] * J[k];
+				strain_disp_matrix[0][2] += dN_dx[k*4+1] * J[k];
+				strain_disp_matrix[0][4] += dN_dx[k*4+2] * J[k];
+				strain_disp_matrix[0][6] += dN_dx[k*4+3] * J[k];
+				
+				strain_disp_matrix[1][1] += dN_dy[k*4+0] * J[k];
+				strain_disp_matrix[1][3] += dN_dy[k*4+1] * J[k];
+				strain_disp_matrix[1][5] += dN_dy[k*4+2] * J[k];
+				strain_disp_matrix[1][7] += dN_dy[k*4+3] * J[k];
+
+				strain_disp_matrix[2][0] += dN_dy[k*4+0] * J[k];
+				strain_disp_matrix[2][1] += dN_dx[k*4+0] * J[k];
+				strain_disp_matrix[2][2] += dN_dy[k*4+1] * J[k];
+				strain_disp_matrix[2][3] += dN_dx[k*4+1] * J[k];
+				strain_disp_matrix[2][4] += dN_dy[k*4+2] * J[k];
+				strain_disp_matrix[2][5] += dN_dx[k*4+2] * J[k];
+				strain_disp_matrix[2][6] += dN_dy[k*4+3] * J[k];
+				strain_disp_matrix[2][7] += dN_dx[k*4+3] * J[k];
 			}
+			// plane stress
 			stress_strain_matrix = {
 				{1, structure.poisson_ratio, 0},
 				{structure.poisson_ratio, 1, 0},
@@ -179,10 +182,15 @@ void calcElementMatrix2Dquad(){
 			}
 			// calculate element stiffness matrix
 			calcStiffnessMatrix(stiff_matrix, strain_disp_matrix, stress_strain_matrix);
+			for(j=0;j<stiff_matrix.size();j++){
+				for(k=0;k<stiff_matrix[j].size();k++){
+					stiff_matrix[j][k] *= structure.thickness;
+				}
+			}
 			// set element matrix to adjacency matrix format
 			for(j=0;j<4;j++){
 				connect_check = 0;
-				size_of_column_nonzero = adj_matrix.idx[node_id[j]].size()*sim_prm.dim;
+				size_of_column_nonzero = adj_matrix.idx[node_id[j]].size();
 				for(k=0;k<4;k++){
 					for(l=0;l<size_of_column_nonzero;l++){
 						if(adj_matrix.idx[node_id[j]][l] == node_id[k]){

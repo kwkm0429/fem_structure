@@ -223,6 +223,9 @@ void readParameterDataFile(){
         }else if(list[0] == "EQUATION_SOLVER"){
             sim_prm.eq_solver_opt = std::stoi(list[2]);
 
+        }else if(list[0] == "THICKNESS"){
+            structure.thickness = std::stod(list[2]);
+        
         }else{
             // std::cout<<list[0]<<std::endl;
         }

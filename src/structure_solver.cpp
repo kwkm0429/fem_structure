@@ -11,6 +11,15 @@
 #include "init.h"
 #include "debug.h"
 
+void updatePosition(){
+	int i;
+	for(int i;i<structure.num_nodes;i++){
+		structure.x[i] += structure.disp_x[i];
+		structure.y[i] += structure.disp_y[i];
+		structure.z[i] += structure.disp_z[i];
+	}
+}
+
 void executeStaticAnalysis(){
 	// read input files
 	readParameterDataFile();
@@ -46,6 +55,7 @@ void executeStaticAnalysis(){
 	// solve KU=F
 	solveLinearEquation2D();
 	// output
+	updatePosition();
 	outputDispVtkFile(1);
 
 #ifdef DEBUG

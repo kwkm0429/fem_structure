@@ -6,10 +6,10 @@
 #include <stdlib.h>
 
 // default parameters for structure mesh
-double LENGTH_X = 1.0;
+double LENGTH_X = 2.0;
 double LENGTH_Y = 1.0;
-double DX = 0.5;
-double DY = 0.5;
+double DX = 0.2;
+double DY = 0.2;
 int SIZE_X=LENGTH_X*(1/DX) + 1;
 int SIZE_Y=LENGTH_Y*(1/DY) + 1;
 int NUMBER_OF_NODES=SIZE_Y * SIZE_X;
@@ -43,15 +43,25 @@ void makeBoundaryFile();
 
 int main(int argc, char* argv[]){
 
-	if(argc != 5){
-        fprintf(stderr,"Usage: ./2d_quad_meshgen <output directory> <node filename> <elem file name> <bc file name>\n");
+	if(argc != 9){
+        fprintf(stderr,"Usage: ./2d_quad_meshgen <length x> <length y> <division x> <division y> <output directory> <node filename> <elem file name> <bc file name>\n");
         exit(1);
     }
 
-    output_dirname = argv[1];
-    node_filename = argv[2];
-    elem_filename = argv[3];
-    bc_filename = argv[4];
+    LENGTH_X = atof(argv[1]);
+	LENGTH_Y = atof(argv[2]);
+	SIZE_X = atof(argv[3])+1;
+	SIZE_Y = atof(argv[4])+1;
+	DX = LENGTH_X / (SIZE_X - 1);
+	DY = LENGTH_Y / (SIZE_Y - 1);
+	NUMBER_OF_NODES=SIZE_Y * SIZE_X;
+	NUMBER_OF_ELEMENTS=(SIZE_Y-1) * (SIZE_X-1);
+	NUM_NODES_PER_ELEM=4;
+
+    output_dirname = argv[5];
+    node_filename = argv[6];
+    elem_filename = argv[7];
+    bc_filename = argv[8];
 
 	initFluidVector();
 	setNodePosition();
@@ -99,7 +109,7 @@ void setBoundaryCondition(){
 		}
 		if(equal(NodeX[i], LENGTH_X)){
 			ForceX[i]=0;
-			ForceY[i]=-1;
+			ForceY[i]=-10000;
 			ForceZ[i]=0;
 		}
 		//*/

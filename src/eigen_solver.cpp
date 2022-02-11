@@ -88,17 +88,21 @@ void setBoundaryCondition2D(SpMat& A, Vector& b){
 	}
 	for(i=0;i<A.outerSize();++i){
 		for(SpMat::InnerIterator it(A, i); it; ++it){
-			if(structure.is_dirichlet_dx[it.row()]){
-				if(i == it.col()*2){
-					it.valueRef() = 1;
-				}else{
-					it.valueRef() = 0;
+			if(it.row()%2==0){
+				if(structure.is_dirichlet_dx[it.row()/2]){
+					if(i == it.col()){
+						it.valueRef() = 1;
+					}else{
+						it.valueRef() = 0;
+					}
 				}
-			}else if(structure.is_dirichlet_dy[it.row()]){
-				if(i == it.col()*2+1){
-					it.valueRef() = 1;
-				}else{
-					it.valueRef() = 0;
+			}else{
+				if(structure.is_dirichlet_dy[(it.row()-1)/2]){
+					if(i == it.col()){
+						it.valueRef() = 1;
+					}else{
+						it.valueRef() = 0;
+					}
 				}
 			}
 		}
@@ -124,10 +128,9 @@ void solveLinearEquation2D(){
 	setBoundaryCondition2D(s_matrix.stiff, rhs);
 
 	// check matrix and rhs
-	std::cout<<"check stiffness matrix"<<std::endl;
+	//std::cout<<"check stiffness matrix"<<std::endl;
 	std::cout<<s_matrix.stiff<<std::endl;
-
-	std::cout<<"check rhs vector"<<std::endl;
+	//std::cout<<"check rhs vector"<<std::endl;
 	std::cout<<rhs<<std::endl;
 
 	// solve
@@ -135,6 +138,8 @@ void solveLinearEquation2D(){
 
 	for(i=0;i<structure.num_nodes*2;i++){
 		structure.disp_all[i] = Uvec(i,0);
+		if(i%2==0)structure.disp_x[i/2]=Uvec(i,0);
+		else structure.disp_y[(i-1)/2]=Uvec(i,0);
 	}
 
 	if(is_solved){

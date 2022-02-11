@@ -32,6 +32,7 @@ struct StructureParameter{
 	double density;
 	double youngs_modulus;
 	double poisson_ratio;
+	double thickness;
 
 	std::vector< std::vector<int> > element_node_table;
 	std::vector<double> x, y, z;
