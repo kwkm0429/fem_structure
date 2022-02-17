@@ -284,7 +284,7 @@ void initAdjMatrix(){
             }
         }
     }
-    sim_prm.num_nonzero*=2;
+    sim_prm.num_nonzero*=4;
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif

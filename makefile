@@ -1,22 +1,36 @@
-CXX     := g++            # compiler
-CFLAGS  := -g -O3 -MMD -MP -Wall -std=c++11 #-fopenmp  # -g : generate debug information, -MMD : output *.d , -MP : output dependent, -O2 : optimization
-LDFLAGS := -g #-fopenmp             # math library -> add -lm
-LIBS    :=                # declare .a, .so
-INCLUDE := -I ./include   # -I : search .h in directory
-SRC_DIR := src          # source directory
-OBJ_DIR := obj          # .o , .d 
-EX_DIR  := data-output     # .vtk
-SOURCES := $(wildcard src/*.cpp) # all file, if you want except a file, use shell command
-OBJS    := $(addprefix obj/,$(notdir $(SOURCES:.cpp=.o)))
-TARGET  := run
-DEPENDS := $(OBJS:.o=.d) # convert .o to .d
+CXX     := g++
 
-all: $(TARGET) data-output
+CFLAGS  := -g -O3 -std=c++11
+LDFLAGS := -g -lm
 
-$(TARGET): $(OBJS) $(LIBS)
-	$(CXX) -o  $@ $(OBJS) $(LDFLAGS)
+LIBS    := -L/usr/local/lib -lm -lstdc++
+INCLUDE := -I./include -I/usr/include/eigen3 -I/usr/local/include
+OBJ_DIR := obj
+EX_DIR  := data-output
+SRC     := $(wildcard src/*.cpp)
 
-obj/%.o : src/%.cpp
+ifdef FLAGS
+	comma:= ,
+	empty:=
+	space:= $(empty) $(empty)
+	DFLAGS = $(subst $(comma), $(space), $(FLAGS))
+
+	ifeq ($(findstring OPENMP, $(DFLAGS)), OPENMP)
+		CFLAGS = -g -O3 -std=c++11 -fopenmp
+		LDFLAGS = -g -lm -fopenmp
+	endif
+endif
+
+OBJ     := $(addprefix obj/,$(notdir $(SRC:.cpp=.o)))
+TARGET  := bin/fem
+DEPENDS := $(OBJ:.o=.d)
+
+all: $(TARGET) $(EX_DIR)
+
+$(TARGET): $(OBJ)
+	$(CXX) $(INCLUDE) -o $@ $(OBJ) $(CFLAGS) $(LIBS)
+
+obj/%.o : src*/%.cpp
 	@if [ ! -e OBJ_DIR ]; \
 		then mkdir -p obj; \
 		fi
@@ -24,13 +38,12 @@ obj/%.o : src/%.cpp
 
 # clean files
 clean: 
-	-rm -f $(OBJS) $(TARGET) $(DEPENDS) 
+	-rm -f $(OBJ) $(TARGET) $(DEPENDS) 
 	-rm -r $(EX_DIR) $(OBJ_DIR)
 
 -include $(DEPENDS)
 
-# create data-output 
-data-output: # make data-output directory
+$(EX_DIR):
 	mkdir -p data-output
 
 # clean files

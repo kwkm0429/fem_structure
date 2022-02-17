@@ -44,16 +44,14 @@ void calcJacobian(
 	N[k*4+3] = (1 - xi) * (1 + eta) * 0.25;
 
 	dN_dxi[0]  = -(1 - eta) * 0.25;
-	dN_deta[0] = -(1 - xi)  * 0.25;
- 
-	dN_dxi[1]  = (1 - eta)  * 0.25;
-	dN_deta[1] = -(1 + xi)  * 0.25;
-
-	dN_dxi[2]  = (1 + eta)  * 0.25;
-	dN_deta[2] = (1 + xi)   * 0.25;
-
+	dN_dxi[1]  =  (1 - eta) * 0.25;
+	dN_dxi[2]  =  (1 + eta) * 0.25;
 	dN_dxi[3]  = -(1 + eta) * 0.25;
-	dN_deta[3] = (1 - xi)   * 0.25;
+
+	dN_deta[0] = -(1 - xi)  * 0.25;
+	dN_deta[1] = -(1 + xi)  * 0.25;
+	dN_deta[2] =  (1 + xi)  * 0.25;
+	dN_deta[3] =  (1 - xi)  * 0.25;
 
 	dx_dxi = dx_deta = dy_dxi = dy_deta = 0;
 
@@ -93,8 +91,8 @@ void calcElementMatrix2Dquad(){
 	double time_start = elapsedTime();
 #endif
 	int node_id1 = 0, node_id2 = 0, node_id3 = 0, node_id4 = 0;
-	int i = 0, j = 0, k = 0, l = 0, ne1 = 0, ne2 = 0, ne3 = 0, ne4 = 0;
-	double jaccobian = 0;
+	int i = 0, j = 0, k = 0, l = 0, m=0, ne1 = 0, ne2 = 0, ne3 = 0, ne4 = 0;
+	double detJ = 0;
 	std::vector<int> node_id = std::vector<int>(4,0);
 	std::vector<double> x     = std::vector<double>(4,0);
 	std::vector<double> y     = std::vector<double>(4,0);
@@ -126,8 +124,8 @@ void calcElementMatrix2Dquad(){
 		#pragma omp parallel
 		{
 		#pragma omp for firstprivate(node_id, node_id1, node_id2, node_id3, node_id4, \
-		ne1, ne2, ne3, ne4, j, k, l, \
-		x, y, dN_dx, dN_dy, N, J, \
+		ne1, ne2, ne3, ne4, j, k, l, m, \
+		x, y, dN_dx, dN_dy, N, J, detJ, \
 		mass, stiff, damping, connect_check, size_of_column_nonzero,\
 		elem_id, strain_disp_matrix, stress_strain_matrix)
 #endif 
@@ -138,77 +136,78 @@ void calcElementMatrix2Dquad(){
 				node_id[j] = structure.element_node_table[elem_id][j];
 				x[j] = structure.x[node_id[j]];
 				y[j] = structure.y[node_id[j]];
-			}		
-			jaccobian = 0;
-			for(k=0;k<4;k++){
-				calcJacobian(k,J,x,y,N,dN_dx,dN_dy); // calculate jaccobian and basis function
-				jaccobian += std::abs(J[k]);
 			}
-			for(k=0;k<4;k++){ // nodes in the element
-				f_element_func[elem_id][k] = 0;
-				for(l=0;l<4;l++){ // quadrature point
+			detJ=0;
+			for(j=0;j<4;j++){
+				calcJacobian(j,J,x,y,N,dN_dx,dN_dy); // calculate jaccobian and basis function
+				detJ += std::abs(J[j]);
+			}
+			for(j=0;j<4;j++){ // nodes in the element
+				f_element_func[elem_id][j] = 0;
+				for(k=0;k<4;k++){ // quadrature point
 					// N[l*4+k] : weight at quadrature point l in terms of node k
-					f_element_func[elem_id][k] += N[l*4+k] * std::abs(J[l]);
+					f_element_func[elem_id][j] += N[k*4+j] * std::abs(J[k]);
 				}
 			}
 			strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0));
 			stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));
-			for(k=0;k<4;k++){ // quadrature point
-				strain_disp_matrix[0][0] += dN_dx[k*4+0];
-				strain_disp_matrix[0][2] += dN_dx[k*4+1];
-				strain_disp_matrix[0][4] += dN_dx[k*4+2];
-				strain_disp_matrix[0][6] += dN_dx[k*4+3];
+			stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0));
+			for(j=0;j<4;j++){ // quadrature point
+				strain_disp_matrix[0][0] = dN_dx[j*4+0];
+				strain_disp_matrix[0][2] = dN_dx[j*4+1];
+				strain_disp_matrix[0][4] = dN_dx[j*4+2];
+				strain_disp_matrix[0][6] = dN_dx[j*4+3];
 				
-				strain_disp_matrix[1][1] += dN_dy[k*4+0];
-				strain_disp_matrix[1][3] += dN_dy[k*4+1];
-				strain_disp_matrix[1][5] += dN_dy[k*4+2];
-				strain_disp_matrix[1][7] += dN_dy[k*4+3];
+				strain_disp_matrix[1][1] = dN_dy[j*4+0];
+				strain_disp_matrix[1][3] = dN_dy[j*4+1];
+				strain_disp_matrix[1][5] = dN_dy[j*4+2];
+				strain_disp_matrix[1][7] = dN_dy[j*4+3];
 
-				strain_disp_matrix[2][0] += dN_dy[k*4+0];
-				strain_disp_matrix[2][1] += dN_dx[k*4+0];
-				strain_disp_matrix[2][2] += dN_dy[k*4+1];
-				strain_disp_matrix[2][3] += dN_dx[k*4+1];
-				strain_disp_matrix[2][4] += dN_dy[k*4+2];
-				strain_disp_matrix[2][5] += dN_dx[k*4+2];
-				strain_disp_matrix[2][6] += dN_dy[k*4+3];
-				strain_disp_matrix[2][7] += dN_dx[k*4+3];
-			}
-			// plane stress
-			stress_strain_matrix = {
-				{1, structure.poisson_ratio, 0},
-				{structure.poisson_ratio, 1, 0},
-				{0, 0, (1-structure.poisson_ratio)/2}};
-			for(k=0;k<3;k++){
-				for(l=0;l<3;l++){
-					stress_strain_matrix[k][l] *= structure.youngs_modulus / (1 - structure.poisson_ratio * structure.poisson_ratio);
-				}
-			}
-			// calculate element stiffness matrix
-			calcStiffnessMatrix(stiff_matrix, strain_disp_matrix, stress_strain_matrix);
-			for(j=0;j<stiff_matrix.size();j++){
-				for(k=0;k<stiff_matrix[j].size();k++){
-					stiff_matrix[j][k] *= structure.thickness * jaccobian;
-				}
-			}
-			// set element matrix to adjacency matrix format
-			for(j=0;j<4;j++){
-				connect_check = 0;
-				size_of_column_nonzero = adj_matrix.idx[node_id[j]].size();
-				for(k=0;k<4;k++){
-					for(l=0;l<size_of_column_nonzero;l++){
-						if(adj_matrix.idx[node_id[j]][l] == node_id[k]){
-							connect_check++;
-							adj_matrix.stiff[node_id[j]*2][l*2]     += stiff_matrix[j*2][k*2];
-							adj_matrix.stiff[node_id[j]*2][l*2+1]   += stiff_matrix[j*2][k*2+1];
-							adj_matrix.stiff[node_id[j]*2+1][l*2]   += stiff_matrix[j*2+1][k*2];
-							adj_matrix.stiff[node_id[j]*2+1][l*2+1] += stiff_matrix[j*2+1][k*2+1];
-							break;
-						}
+				strain_disp_matrix[2][0] = dN_dy[j*4+0];
+				strain_disp_matrix[2][1] = dN_dx[j*4+0];
+				strain_disp_matrix[2][2] = dN_dy[j*4+1];
+				strain_disp_matrix[2][3] = dN_dx[j*4+1];
+				strain_disp_matrix[2][4] = dN_dy[j*4+2];
+				strain_disp_matrix[2][5] = dN_dx[j*4+2];
+				strain_disp_matrix[2][6] = dN_dy[j*4+3];
+				strain_disp_matrix[2][7] = dN_dx[j*4+3];
+
+				// plane stress
+				stress_strain_matrix = {
+					{1, structure.poisson_ratio, 0},
+					{structure.poisson_ratio, 1, 0},
+					{0, 0, (1-structure.poisson_ratio)/2}};
+				for(k=0;k<3;k++){
+					for(l=0;l<3;l++){
+						stress_strain_matrix[k][l] *= structure.youngs_modulus / (1 - structure.poisson_ratio * structure.poisson_ratio);
 					}
 				}
-				if(connect_check != 4){
-					std::cerr<<"connectivity error: "<<connect_check<<std::endl;
-					exit(1);
+				// calculate element stiffness matrix
+				calcStiffnessMatrix(stiff_matrix, strain_disp_matrix, stress_strain_matrix);
+				for(k=0;k<stiff_matrix.size();k++){
+					for(l=0;l<stiff_matrix[k].size();l++){
+						stiff_matrix[k][l] *= structure.thickness * J[j];
+					}
+				}
+				// set element matrix to adjacency matrix format
+				for(k=0;k<4;k++){
+					connect_check = 0;
+					size_of_column_nonzero = adj_matrix.idx[node_id[k]].size();
+					for(l=0;l<4;l++){
+						for(m=0;m<size_of_column_nonzero;m++){
+							if(adj_matrix.idx[node_id[k]][m] == node_id[l]){
+								connect_check++;
+								adj_matrix.stiff[node_id[k]*2][m*2]     += stiff_matrix[k*2][l*2];
+								adj_matrix.stiff[node_id[k]*2][m*2+1]   += stiff_matrix[k*2][l*2+1];
+								adj_matrix.stiff[node_id[k]*2+1][m*2]   += stiff_matrix[k*2+1][l*2];
+								adj_matrix.stiff[node_id[k]*2+1][m*2+1] += stiff_matrix[k*2+1][l*2+1];
+							}
+						}
+					}
+					if(connect_check != 4){
+						std::cerr<<"connectivity error: "<<connect_check<<std::endl;
+						exit(1);
+					}
 				}
 			}
 		}

@@ -88,6 +88,20 @@ void setBoundaryCondition2D(SpMat& A, Vector& b){
 	}
 	for(i=0;i<A.outerSize();++i){
 		for(SpMat::InnerIterator it(A, i); it; ++it){
+			// Dirichlet Condition
+			if(it.col()%2==0){
+				if(structure.is_dirichlet_dx[it.col()/2]){
+					b(i,0)-=structure.dirichlet_dx[it.col()/2]*it.value();
+					if(it.col()==it.row())it.valueRef() = 1;
+					else it.valueRef() = 0;
+				}
+			}else{
+				if(structure.is_dirichlet_dy[(it.col()-1)/2]){
+					b(i,0)-=structure.dirichlet_dy[(it.col()-1)/2]*it.value();
+					if(it.col()==it.row())it.valueRef() = 1;
+					else it.valueRef() = 0;
+				}
+			}
 			if(it.row()%2==0){
 				if(structure.is_dirichlet_dx[it.row()/2]){
 					if(i == it.col()){

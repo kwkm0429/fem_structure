@@ -20,7 +20,7 @@ GRAVITY_Z = 0  [cm/s^2]
 #
 DENSITY = 1.0    [g/cm^3] = 10^(-3) [kg/m^3]
 #
-EQUATION_SOLVER = 0 (0:LU 1:BiCGSTAB)
+EQUATION_SOLVER = 1 (0:LU 1:BiCGSTAB)
 #
 THICKNESS = 0.05 [m]
 #
