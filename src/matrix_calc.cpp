@@ -23,15 +23,20 @@ double multi_vec_vec(const std::vector<double>& a, const std::vector<double>& b,
 
 void multi_mat_vec(std::vector<double>& res,
     const std::vector< std::vector<double> >& a,
-    const std::vector<double>& b, int n){
-
-    int i, j;
+    const std::vector<double>& b){
+    int i, j, n, m;
+    n = a.size();
+    m = a[0].size();
+    if(b.size() != m){
+        std::cerr<<"matrix size error"<<std::endl;
+        return;
+    }
     res = std::vector<double>(n,0);
     #ifdef _OPENMP
     #pragma omp parallel for private(j)
     #endif
     for(i=0;i<n;i++){
-        for(j=0;j<n;j++){
+        for(j=0;j<m;j++){
             res[i] += a[i][j] * b[j];
         }
     }

@@ -55,6 +55,98 @@ void outputDispVtkFile(int number){
 #endif
 }
 
+void outputStrainVtkFile(int number){
+	int i,j;
+	char head[16]="strain";
+	char end[16]=".vtk";
+	char filename[256];
+	sprintf(filename,"%s%d%s",head,number,end);
+	std::ofstream ofs(sim_prm.output_data_dirname + filename);
+	ofs<<"# vtk DataFile Version 4.0"<<std::endl;
+	ofs<<"scalar"<<std::endl;
+	ofs<<"ASCII"<<std::endl;
+	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
+	ofs<<"POINTS "<<structure.num_nodes<<" float"<<std::endl;
+	for(i=0;i<structure.num_nodes;i++){
+		ofs<<structure.x[i]<<" "<<structure.y[i]<<" "<<structure.z[i]<<std::endl;
+	}
+	ofs<<"CELLS "<<structure.num_elements<<" "<<5*structure.num_elements<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		ofs<<sim_prm.num_polygon_corner<<" ";
+		for(j=0;j<sim_prm.num_polygon_corner;j++){
+			ofs<<structure.element_node_table[i][j];
+			if(j!=sim_prm.num_polygon_corner-1)ofs<<" ";
+			else ofs<<std::endl;
+		}
+	}
+	ofs<<"CELL_TYPES "<<structure.num_elements<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		if(sim_prm.dim == 2)ofs<<9<<std::endl;
+		else if(sim_prm.dim == 3)ofs<<10<<std::endl;
+	}
+	ofs<<"CELL_DATA "<<structure.num_elements<<std::endl;
+	ofs<<"VECTORS strain float"<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		ofs<<structure.strain_x[i]<<" "<<structure.strain_y[i]<<" "<<structure.strain_z[i]<<std::endl;
+	}
+	ofs<<"SCALARS point_scalars float"<<std::endl;
+	ofs<<"LOOKUP_TABLE default"<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		ofs<<std::sqrt(structure.strain_x[i]*structure.strain_x[i]+structure.strain_y[i]*structure.strain_y[i]+structure.strain_z[i]*structure.strain_z[i])<<std::endl;
+	}
+	ofs.close();
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}
+
+void outputStressVtkFile(int number){
+	int i,j;
+	char head[16]="stress";
+	char end[16]=".vtk";
+	char filename[256];
+	sprintf(filename,"%s%d%s",head,number,end);
+	std::ofstream ofs(sim_prm.output_data_dirname + filename);
+	ofs<<"# vtk DataFile Version 4.0"<<std::endl;
+	ofs<<"scalar"<<std::endl;
+	ofs<<"ASCII"<<std::endl;
+	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
+	ofs<<"POINTS "<<structure.num_nodes<<" float"<<std::endl;
+	for(i=0;i<structure.num_nodes;i++){
+		ofs<<structure.x[i]<<" "<<structure.y[i]<<" "<<structure.z[i]<<std::endl;
+	}
+	ofs<<"CELLS "<<structure.num_elements<<" "<<5*structure.num_elements<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		ofs<<sim_prm.num_polygon_corner<<" ";
+		for(j=0;j<sim_prm.num_polygon_corner;j++){
+			ofs<<structure.element_node_table[i][j];
+			if(j!=sim_prm.num_polygon_corner-1)ofs<<" ";
+			else ofs<<std::endl;
+		}
+	}
+	ofs<<"CELL_TYPES "<<structure.num_elements<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		if(sim_prm.dim == 2)ofs<<9<<std::endl;
+		else if(sim_prm.dim == 3)ofs<<10<<std::endl;
+	}
+	ofs<<"CELL_DATA "<<structure.num_elements<<std::endl;
+	ofs<<"VECTORS stress float"<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		ofs<<structure.stress_x[i]<<" "<<structure.stress_y[i]<<" "<<structure.stress_z[i]<<std::endl;
+	}
+	ofs<<"SCALARS point_scalars float"<<std::endl;
+	ofs<<"LOOKUP_TABLE default"<<std::endl;
+	for(i=0;i<structure.num_elements;i++){
+		ofs<<std::sqrt(structure.stress_x[i]*structure.stress_x[i]+structure.stress_y[i]*structure.stress_y[i]+structure.stress_z[i]*structure.stress_z[i])<<std::endl;
+	}
+	ofs.close();
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}
+
+
+
 void outputParameterDataFile(){
 	char filename[32]="param.log";
 	std::ofstream ofs(sim_prm.output_data_dirname + filename);

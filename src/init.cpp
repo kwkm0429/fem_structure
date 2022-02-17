@@ -41,18 +41,6 @@ void readNodeDataFile(){
             structure.disp_x          = std::vector<double>(structure.num_nodes,0);
             structure.disp_y          = std::vector<double>(structure.num_nodes,0);
             structure.disp_z          = std::vector<double>(structure.num_nodes,0);
-            structure.stress_x        = std::vector<double>(structure.num_nodes,0);
-            structure.stress_y        = std::vector<double>(structure.num_nodes,0);
-            structure.stress_z        = std::vector<double>(structure.num_nodes,0);
-            structure.sheer_stress_xy = std::vector<double>(structure.num_nodes,0);
-            structure.sheer_stress_yz = std::vector<double>(structure.num_nodes,0);
-            structure.sheer_stress_zx = std::vector<double>(structure.num_nodes,0);
-            structure.strain_x        = std::vector<double>(structure.num_nodes,0);
-            structure.strain_y        = std::vector<double>(structure.num_nodes,0);
-            structure.strain_z        = std::vector<double>(structure.num_nodes,0);
-            structure.sheer_strain_xy = std::vector<double>(structure.num_nodes,0);
-            structure.sheer_strain_yz = std::vector<double>(structure.num_nodes,0);
-            structure.sheer_strain_zx = std::vector<double>(structure.num_nodes,0);
 
             structure.dirichlet_dx          = std::vector<double>(structure.num_nodes,0);
             structure.dirichlet_dy          = std::vector<double>(structure.num_nodes,0);
@@ -106,6 +94,20 @@ void readElemDataFile(){
             sim_prm.num_polygon_corner = std::stoi(list[1]);
             structure.element_node_table   = std::vector< std::vector<int> >(structure.num_elements,std::vector<int>(sim_prm.num_polygon_corner,0));
             structure.element_func         = std::vector< std::vector<double> >(structure.num_elements,std::vector<double>(sim_prm.num_polygon_corner,0));
+
+            structure.stress_x        = std::vector<double>(structure.num_elements,0);
+            structure.stress_y        = std::vector<double>(structure.num_elements,0);
+            structure.stress_z        = std::vector<double>(structure.num_elements,0);
+            structure.sheer_stress_xy = std::vector<double>(structure.num_elements,0);
+            structure.sheer_stress_yz = std::vector<double>(structure.num_elements,0);
+            structure.sheer_stress_zx = std::vector<double>(structure.num_elements,0);
+            structure.strain_x        = std::vector<double>(structure.num_elements,0);
+            structure.strain_y        = std::vector<double>(structure.num_elements,0);
+            structure.strain_z        = std::vector<double>(structure.num_elements,0);
+            structure.sheer_strain_xy = std::vector<double>(structure.num_elements,0);
+            structure.sheer_strain_yz = std::vector<double>(structure.num_elements,0);
+            structure.sheer_strain_zx = std::vector<double>(structure.num_elements,0);
+
         }else if(loop>=1 && loop<=structure.num_elements){
             if((int)(list.size())-1 != sim_prm.num_polygon_corner){
                 std::cerr << sim_prm.elem_filename << " Error: numbers in one line" << std::endl;

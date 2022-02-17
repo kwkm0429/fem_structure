@@ -32,6 +32,8 @@ void executeStaticAnalysis(){
 	// output initial state
 	outputParameterDataFile();
 	outputDispVtkFile(0);
+	outputStrainVtkFile(0);
+	outputStressVtkFile(0);
 	// calculate boundary shape function
 	calcBoundaryShapeFunction();
 	// coloring Elements for Element Matrix Parallelization
@@ -55,6 +57,9 @@ void executeStaticAnalysis(){
 	// solve KU=F
 	solveLinearEquation2D();
 	// output
+	calcElementMatrix2Dquad(); //for calc strain and stress
+	outputStrainVtkFile(1);
+	outputStressVtkFile(1);
 	updatePosition();
 	outputDispVtkFile(1);
 

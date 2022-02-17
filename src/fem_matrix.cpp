@@ -100,12 +100,12 @@ void calcElementMatrix2Dquad(){
 	std::vector<double> dN_dy = std::vector<double>(16,0);
 	std::vector<double> N     = std::vector<double>(16,0);
 	std::vector<double> J     = std::vector<double>(4,0);
-	// B matrix
-	std::vector<std::vector<double>> strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0));
-	// D matrix
-	std::vector<std::vector<double>> stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));
-	// K matrix
-	std::vector<std::vector<double>> stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0));
+	std::vector<double> disp_elem   = std::vector<double>(8,0);
+	std::vector<double> strain_elem = std::vector<double>(3,0);
+	std::vector<double> stress_elem = std::vector<double>(3,0);
+	std::vector<std::vector<double>> strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0)); // B matrix
+	std::vector<std::vector<double>> stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));	// D matrix
+	std::vector<std::vector<double>> stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // K matrix
 
 	double mass = 0, stiff = 0, damping = 0;
 	int connect_check = 0;
@@ -127,7 +127,7 @@ void calcElementMatrix2Dquad(){
 		ne1, ne2, ne3, ne4, j, k, l, m, \
 		x, y, dN_dx, dN_dy, N, J, detJ, \
 		mass, stiff, damping, connect_check, size_of_column_nonzero,\
-		elem_id, strain_disp_matrix, stress_strain_matrix)
+		elem_id, strain_disp_matrix, stress_strain_matrix, stiff_matrix, disp_elem, strain_elem, stress_elem)
 #endif 
 		for(i=0;i<(int)structure.colored_elem_id[color].size();i++){
 			elem_id = structure.colored_elem_id[color][i];
@@ -136,6 +136,8 @@ void calcElementMatrix2Dquad(){
 				node_id[j] = structure.element_node_table[elem_id][j];
 				x[j] = structure.x[node_id[j]];
 				y[j] = structure.y[node_id[j]];
+				disp_elem[j*2]   = structure.disp_x[node_id[j]];
+				disp_elem[j*2+1] = structure.disp_y[node_id[j]];
 			}
 			detJ=0;
 			for(j=0;j<4;j++){
@@ -149,9 +151,6 @@ void calcElementMatrix2Dquad(){
 					f_element_func[elem_id][j] += N[k*4+j] * std::abs(J[k]);
 				}
 			}
-			strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0));
-			stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));
-			stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0));
 			for(j=0;j<4;j++){ // quadrature point
 				strain_disp_matrix[0][0] = dN_dx[j*4+0];
 				strain_disp_matrix[0][2] = dN_dx[j*4+1];
@@ -189,6 +188,15 @@ void calcElementMatrix2Dquad(){
 						stiff_matrix[k][l] *= structure.thickness * J[j];
 					}
 				}
+				// calc strain and stress
+				multi_mat_vec(strain_elem, strain_disp_matrix, disp_elem);
+				multi_mat_vec(stress_elem, stress_strain_matrix, strain_elem);
+				structure.strain_x[elem_id] += strain_elem[0] * J[j];
+				structure.strain_y[elem_id] += strain_elem[1] * J[j];
+				structure.sheer_strain_xy[elem_id] += strain_elem[2] * J[j];
+				structure.stress_x[elem_id] += stress_elem[0] * J[j];
+				structure.stress_y[elem_id] += stress_elem[1] * J[j];
+				structure.sheer_stress_xy[elem_id] += stress_elem[2] * J[j];
 				// set element matrix to adjacency matrix format
 				for(k=0;k<4;k++){
 					connect_check = 0;

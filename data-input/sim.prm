@@ -1,6 +1,6 @@
 # Simulation parameters
 #
-YOUNGS_MODULUS = 150E+09 [Pa]
+YOUNGS_MODULUS = 150000 [Pa]
 #
 POISSON_RATIO = 0.0
 #
@@ -22,5 +22,5 @@ DENSITY = 1.0    [g/cm^3] = 10^(-3) [kg/m^3]
 #
 EQUATION_SOLVER = 1 (0:LU 1:BiCGSTAB)
 #
-THICKNESS = 0.05 [m]
+THICKNESS = 50 [m]
 #
