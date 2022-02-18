@@ -24,6 +24,7 @@ struct SimulationParameter{
 	int num_polygon_corner;
 	int num_nonzero;
 	int dim;
+	bool is_topopt;
 };
 
 struct StructureParameter{
@@ -52,6 +53,8 @@ struct StructureParameter{
 	std::vector< std::vector<double> > element_func;
 	// coloring
 	std::vector<std::vector<int>> colored_elem_id;
+	// young's modulus for nodes
+	std::vector<double> youngs_modulus_nodes;
 };
 
 struct AdjacencyMatrix{

@@ -20,12 +20,24 @@ void updatePosition(){
 	}
 }
 
-void executeStaticAnalysis(){
+void readInputFiles(){
 	// read input files
 	readParameterDataFile();
 	readNodeDataFile();
 	readElemDataFile();
 	readBoundaryDataFile();
+}
+
+void exePostProcess(){
+	// output
+	calcElementMatrix2Dquad(); //for calc strain and stress
+	outputStrainVtkFile(1);
+	outputStressVtkFile(1);
+	updatePosition();
+	outputDispVtkFile(1);
+}
+
+void exeStaticAnalysis(){
     // set initial state and memory
     initField();
     initAdjMatrix();
@@ -56,12 +68,6 @@ void executeStaticAnalysis(){
 	setSparseMatrix();
 	// solve KU=F
 	solveLinearEquation2D();
-	// output
-	calcElementMatrix2Dquad(); //for calc strain and stress
-	outputStrainVtkFile(1);
-	outputStressVtkFile(1);
-	updatePosition();
-	outputDispVtkFile(1);
 
 #ifdef DEBUG
     debugPrintInfo(__func__);

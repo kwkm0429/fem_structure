@@ -5,8 +5,10 @@
 #include "eigen_solver.h"
 #include "time_measure.h"
 #include "debug.h"
+#include "topopt.h"
 
 static StructureMatrix s_matrix;
+static StructureVector s_vector;
 
 void initSparseMatrix(){
 #ifdef MEASURE
@@ -136,7 +138,7 @@ void solveLinearEquation2D(){
 	int i;
 	bool is_solved = true;
 	Vector rhs = Vector::Zero(structure.num_nodes*2);
-	Vector Uvec = Vector::Zero(structure.num_nodes*2);
+	s_vector.disp = Vector::Zero(structure.num_nodes*2);
 
 	// set boundary condition
 	setBoundaryCondition2D(s_matrix.stiff, rhs);
@@ -148,12 +150,12 @@ void solveLinearEquation2D(){
 	//std::cout<<rhs<<std::endl;
 
 	// solve
-	is_solved = eigenSolver(s_matrix.stiff, Uvec, rhs);
+	is_solved = eigenSolver(s_matrix.stiff, s_vector.disp, rhs);
 
 	for(i=0;i<structure.num_nodes*2;i++){
-		structure.disp_all[i] = Uvec(i,0);
-		if(i%2==0)structure.disp_x[i/2]=Uvec(i,0);
-		else structure.disp_y[(i-1)/2]=Uvec(i,0);
+		structure.disp_all[i] = s_vector.disp(i,0);
+		if(i%2==0)structure.disp_x[i/2] = s_vector.disp(i,0);
+		else structure.disp_y[(i-1)/2] = s_vector.disp(i,0);
 	}
 
 	if(is_solved){
@@ -241,4 +243,40 @@ bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b){
     debugPrintInfo(__func__);
 #endif
 	return true;
+}
+
+// Topology Optimization
+void calcCompliance(double& compliance){
+	compliance = s_vector.disp.transpose() * s_matrix.stiff * s_vector.disp;
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}
+
+void calcSensitivity(TopOptParameter& top){
+	int i,j,node_id;
+	Vector stiff_node = Vector::Zero(structure.num_nodes*2);
+	Vector sens = Vector::Zero(structure.num_nodes*2);
+
+	for(i=0;i<structure.num_nodes;i++){
+		int size_of_column_nonzero = adj_matrix.idx[i].size();
+		for(j=0;j<size_of_column_nonzero;j++){
+			node_id = adj_matrix.idx[i][j];
+			stiff_node(i*2,0)         += adj_matrix.stiff[i*2][j*2];
+			//stiff_node(node_id*2,0)   += adj_matrix.stiff[i*2][j*2];
+			stiff_node(i*2,0)         += adj_matrix.stiff[i*2][j*2+1];
+			//stiff_node(node_id*2+1,0) += adj_matrix.stiff[i*2][j*2+1];
+			stiff_node(i*2+1,0)       += adj_matrix.stiff[i*2+1][j*2];
+			//stiff_node(node_id*2,0)   += adj_matrix.stiff[i*2+1][j*2];
+			stiff_node(i*2+1,0)       += adj_matrix.stiff[i*2+1][j*2+1];
+			//stiff_node(node_id*2+1,0) += adj_matrix.stiff[i*2+1][j*2+1];
+		}
+	}
+	sens = s_vector.disp.transpose() * stiff_node * s_vector.disp;
+	for(i=0;i<(int)(top.sens.size());i++){
+		top.sens[i] = - sens(i,0) * top.pow*(top.E0-top.Emin)*std::pow(top.rho[i],top.pow-1);
+	}
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }

@@ -33,7 +33,7 @@ void readNodeDataFile(){
         }
         if(loop==0){
             structure.num_nodes=std::stoi(list[0]);
-            /* initialize fluid arryas */
+            /* initialize structure vector */
             structure.x               = std::vector<double>(structure.num_nodes,0);
             structure.y               = std::vector<double>(structure.num_nodes,0);
             structure.z               = std::vector<double>(structure.num_nodes,0);
@@ -53,6 +53,7 @@ void readNodeDataFile(){
             structure.force_x               = std::vector<double>(structure.num_nodes,0);
             structure.force_y               = std::vector<double>(structure.num_nodes,0);
             structure.force_z               = std::vector<double>(structure.num_nodes,0);
+            structure.youngs_modulus_nodes  = std::vector<double>(structure.num_nodes,0);
         }
         else if(loop>=1 && loop<=structure.num_nodes){
             /* coordinate of nodes */
@@ -228,6 +229,9 @@ void readParameterDataFile(){
         }else if(list[0] == "THICKNESS"){
             structure.thickness = std::stod(list[2]);
         
+        }else if(list[0] == "IS_TOPOPT"){
+            sim_prm.is_topopt = std::stoi(list[2]);
+        
         }else{
             // std::cout<<list[0]<<std::endl;
         }
@@ -250,6 +254,7 @@ void initField(){
         if(structure.is_dirichlet_dz[i]){
         }else{
         }
+        structure.youngs_modulus_nodes[i] = structure.youngs_modulus;
     }
 #ifdef DEBUG
     debugPrintInfo(__func__);

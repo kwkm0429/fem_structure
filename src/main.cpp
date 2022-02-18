@@ -4,13 +4,20 @@
 #include "structure_solver.h"
 #include "time_measure.h"
 #include "parameter.h"
+#include "topopt.h"
 
 int main(){
 #ifdef MEASURE
 	initializeTime();
 #endif
 
-	executeStaticAnalysis();
+	readInputFiles();
+	if(sim_prm.is_topopt){
+		exeTopOpt();
+	}else{
+		exeStaticAnalysis();
+		exePostProcess();
+	}
 
 #ifdef MEASURE
 	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);

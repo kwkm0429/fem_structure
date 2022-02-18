@@ -11,7 +11,7 @@
 #include "time_measure.h"
 #include "eigen_solver.h"
 #include "matrix_calc.h"
-#include "debug.h"
+//#include "debug.h"
 
 void calcJacobian(
 	int k, 
@@ -178,7 +178,7 @@ void calcElementMatrix2Dquad(){
 					{0, 0, (1-structure.poisson_ratio)/2}};
 				for(k=0;k<3;k++){
 					for(l=0;l<3;l++){
-						stress_strain_matrix[k][l] *= structure.youngs_modulus / (1 - structure.poisson_ratio * structure.poisson_ratio);
+						stress_strain_matrix[k][l] *= 1 / (1 - structure.poisson_ratio * structure.poisson_ratio);
 					}
 				}
 				// calculate element stiffness matrix
@@ -186,6 +186,7 @@ void calcElementMatrix2Dquad(){
 				for(k=0;k<stiff_matrix.size();k++){
 					for(l=0;l<stiff_matrix[k].size();l++){
 						stiff_matrix[k][l] *= structure.thickness * J[j];
+						stiff_matrix[k][l] *= structure.youngs_modulus_nodes[node_id[(int)(k/2)]];
 					}
 				}
 				// calc strain and stress
