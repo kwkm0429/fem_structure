@@ -8,7 +8,7 @@
 #include "parameter.h"
 #include "output.h"
 #include "matrix_calc.h"
-#include "debug.h"
+//#include "debug.h"
 #include "topopt.h"
 
 void outputDispVtkFile(int number){

@@ -7,6 +7,7 @@ struct TopOptParameter{
 	const std::string params_filename = "top.prm";
 	
 	std::vector<double> rho;
+	std::vector<double> rho_new;
 	std::vector<double> sens;
 	// input parameter
 	double vol_max;

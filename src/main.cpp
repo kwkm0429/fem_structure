@@ -12,6 +12,7 @@ int main(){
 #endif
 
 	readInputFiles();
+	initStructureStatus();
 	if(sim_prm.is_topopt){
 		exeTopOpt();
 	}else{

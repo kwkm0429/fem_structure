@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <iomanip>
 
 #include "topopt.h"
 #include "parameter.h"
@@ -13,7 +14,8 @@
 #include "eigen_solver.h"
 #include "output.h"
 #include "init.h"
-#include "debug.h"
+//#include "debug.h"
+#include "fem_matrix.h"
 
 TopOptParameter top;
 
@@ -22,7 +24,7 @@ void readTopOptDataFile(){
     std::ifstream ifsb(sim_prm.input_data_dirname + top.params_filename);
     std::string str;
     if (ifsb.fail()) {
-        std::cerr << "Failed to open " << sim_prm.params_filename << std::endl;
+        std::cerr << "Failed to open " << top.params_filename << std::endl;
         exit(1);
     }
     while (std::getline(ifsb, str)) {
@@ -64,6 +66,7 @@ void readTopOptDataFile(){
 void initTopOpt(){
 	int i;
     top.rho = std::vector<double>(structure.num_nodes,0);
+    top.rho_new = std::vector<double>(structure.num_nodes,0);
     top.sens = std::vector<double>(structure.num_nodes,0);
 	for(i=0;i<structure.num_nodes;i++){
 		top.rho[i] = top.rho_init;
@@ -93,20 +96,23 @@ void calcVolume(){
 }
 
 void optOCmethod(){
-    int i, rsize=top.rho.size();
+    int i;
+    int rsize=(int)(top.rho.size());
     double lambda1=0, lambda2=1e4, lmid=0;
-    double mvlmt = 0.15;
+    double mvlmt=0.15;
     double eta=0.5;
-    double mean=0;
+    double mean;
     std::vector<double> M = std::vector<double>(rsize,0);
     while((lambda2-lambda1)/(lambda1+lambda2)>1e-3){
-        lmid=(lambda2+lambda1)*0.5;
+        lmid = (lambda2+lambda1)*0.5;
         for(i=0;i<rsize;i++){
-            M[i] = top.rho[i] * std::pow((-top.sens[i]/lmid), eta);
-            top.rho[i] = std::max(std::max(std::min(std::min(M[i], top.rho[i]+mvlmt), 1.0), top.rho[i]-mvlmt), 0.0);
+            if(top.sens[i]==0)M[i]=0;
+            else M[i] = top.rho[i] * std::pow((-top.sens[i]/lmid), eta);
+            top.rho_new[i] = std::max(std::max(std::min(std::min(M[i], top.rho[i]+mvlmt), 1.0), top.rho[i]-mvlmt), 1e-9);
         }
+        mean = 0;
         for(i=0;i<rsize;i++){
-            mean += top.rho[i];
+            mean += top.rho_new[i];
         }
         mean /= rsize;
         if(mean-top.vol_max>0){
@@ -115,6 +121,12 @@ void optOCmethod(){
             lambda2 = lmid;
         }
     }
+    for(i=0;i<(int)(top.rho.size());i++){
+        top.rho[i] = top.rho_new[i];
+    }
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 void updateYoungsModulus(){
@@ -122,6 +134,9 @@ void updateYoungsModulus(){
     for(i=0;i<structure.num_nodes;i++){
         structure.youngs_modulus_nodes[i] = (top.E0-top.Emin)*std::pow(top.rho[i], top.pow)+top.Emin;
     }
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }
 
 void exeTopOpt(){
@@ -134,7 +149,6 @@ void exeTopOpt(){
     outputTopOptDataFile(top);
     
     for(i=0;i<top.itr_max;i++){
-        std::cout<<"---------- Topology Optimization Step "<<i+1<<" ----------"<<std::endl;
         updateYoungsModulus();
         exeStaticAnalysis();
         calcVolume();
@@ -144,11 +158,14 @@ void exeTopOpt(){
             break;
         }
         top.comp_prev = top.comp;
+        calcElementMatrix2Dquad();
         calcSensitivity(top);
         optOCmethod();
         outputDensityVtkFile(i+1, top);
-        std::cout<<"Volume: "<<top.vol_frac<<std::endl;
-        std::cout<<"Compliance: "<<top.comp<<std::endl;
+        std::cout.setf(std::ios::left, std::ios::adjustfield);
+        std::cout<<" Step: "<<std::setw(4)<<i+1;
+        std::cout<<" Volume: "<<std::setw(10)<<top.vol_frac;
+        std::cout<<" Compliance: "<<std::setw(10)<<top.comp<<std::endl;
     }
 #ifdef DEBUG
     debugPrintInfo(__func__);

@@ -106,6 +106,7 @@ void calcElementMatrix2Dquad(){
 	std::vector<std::vector<double>> strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0)); // B matrix
 	std::vector<std::vector<double>> stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));	// D matrix
 	std::vector<std::vector<double>> stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // K matrix
+	std::vector<std::vector<double>> stiff_top_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0));
 
 	double mass = 0, stiff = 0, damping = 0;
 	int connect_check = 0;
@@ -114,6 +115,10 @@ void calcElementMatrix2Dquad(){
 	std::vector<std::vector<double> > f_element_func = structure.element_func;
 	// coloring
 	int elem_id = 0, color = 0;
+	// topology optimization
+	std::vector<double> temp = std::vector<double>(8,0);
+	std::vector<double> disp_top = std::vector<double>(8,0);
+	double sens;
 
 	// initialize connectivity format
 	allocateAdjMatrix();
@@ -127,7 +132,7 @@ void calcElementMatrix2Dquad(){
 		ne1, ne2, ne3, ne4, j, k, l, m, \
 		x, y, dN_dx, dN_dy, N, J, detJ, \
 		mass, stiff, damping, connect_check, size_of_column_nonzero,\
-		elem_id, strain_disp_matrix, stress_strain_matrix, stiff_matrix, disp_elem, strain_elem, stress_elem)
+		elem_id, strain_disp_matrix, stress_strain_matrix, stiff_matrix, disp_elem, strain_elem, stress_elem, temp, sens)
 #endif 
 		for(i=0;i<(int)structure.colored_elem_id[color].size();i++){
 			elem_id = structure.colored_elem_id[color][i];
@@ -183,10 +188,12 @@ void calcElementMatrix2Dquad(){
 				}
 				// calculate element stiffness matrix
 				calcStiffnessMatrix(stiff_matrix, strain_disp_matrix, stress_strain_matrix);
+				calcStiffnessMatrix(stiff_top_matrix, strain_disp_matrix, stress_strain_matrix);
 				for(k=0;k<stiff_matrix.size();k++){
 					for(l=0;l<stiff_matrix[k].size();l++){
 						stiff_matrix[k][l] *= structure.thickness * J[j];
-						stiff_matrix[k][l] *= structure.youngs_modulus_nodes[node_id[(int)(k/2)]];
+						stiff_top_matrix[k][l] *= structure.thickness * J[j];
+						stiff_matrix[k][l] *= structure.youngs_modulus_nodes[node_id[j]];
 					}
 				}
 				// calc strain and stress
@@ -198,6 +205,12 @@ void calcElementMatrix2Dquad(){
 				structure.stress_x[elem_id] += stress_elem[0] * J[j];
 				structure.stress_y[elem_id] += stress_elem[1] * J[j];
 				structure.sheer_stress_xy[elem_id] += stress_elem[2] * J[j];
+				// calc topology optimization sensitivity
+				multi_mat_vec(temp, stiff_top_matrix, disp_elem);
+				sens = multi_vec_vec(disp_elem, temp);
+				for(k=0;k<4;k++){
+					structure.sensitivity[node_id[k]] = sens;
+				}
 				// set element matrix to adjacency matrix format
 				for(k=0;k<4;k++){
 					connect_check = 0;
@@ -225,8 +238,6 @@ void calcElementMatrix2Dquad(){
 #endif
 	}
 	structure.element_func = f_element_func;
-	std::cout<<"Matrix nonzero element num : "<<sim_prm.num_nonzero<<std::endl;
-	std::cout<<"Matrix   total element num : "<<(long long)(structure.num_nodes)*structure.num_nodes<<"\n"<<std::endl;
 #ifdef MEASURE
 	double time_end = elapsedTime();
 	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);
@@ -234,6 +245,8 @@ void calcElementMatrix2Dquad(){
 	ofs.close();
 #endif
 #ifdef DEBUG
+	std::cout<<"Matrix nonzero element num : "<<sim_prm.num_nonzero<<std::endl;
+	std::cout<<"Matrix   total element num : "<<(long long)(structure.num_nodes)*structure.num_nodes<<"\n"<<std::endl;
     debugPrintInfo(__func__);
 #endif
 }

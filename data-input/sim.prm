@@ -1,6 +1,6 @@
 # Simulation parameters
 #
-YOUNGS_MODULUS = 150000 [Pa]
+YOUNGS_MODULUS = 150000 [N/mm^2]
 #
 POISSON_RATIO = 0.0
 #
@@ -20,9 +20,9 @@ GRAVITY_Z = 0  [cm/s^2]
 #
 DENSITY = 1.0    [g/cm^3] = 10^(-3) [kg/m^3]
 #
-EQUATION_SOLVER = 1 (0:LU 1:BiCGSTAB)
+EQUATION_SOLVER = 0 (0:LU 1:BiCGSTAB)
 #
-THICKNESS = 50 [m]
+THICKNESS = 50 [mm]
 #
 IS_TOPOPT = 1
 #

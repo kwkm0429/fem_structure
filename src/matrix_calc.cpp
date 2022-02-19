@@ -12,10 +12,13 @@
  * 
 */
 
-double multi_vec_vec(const std::vector<double>& a, const std::vector<double>& b, int n){
+double multi_vec_vec(const std::vector<double>& a, const std::vector<double>& b){
     int i;
     double res=0;
-    for(i=0;i<n;i++){
+    if(a.size()!=b.size()){
+        std::cerr<<__func__<<" : vector size error"<<std::endl;
+    }
+    for(i=0;i<(int)(a.size());i++){
         res+=a[i]*b[i];
     }
     return res;
@@ -28,7 +31,7 @@ void multi_mat_vec(std::vector<double>& res,
     n = a.size();
     m = a[0].size();
     if(b.size() != m){
-        std::cerr<<"matrix size error"<<std::endl;
+        std::cerr<<__func__<<" : matrix size error"<<std::endl;
         return;
     }
     res = std::vector<double>(n,0);
@@ -50,7 +53,7 @@ void multi_mat_mat(
     int i,j,k;
 
     if(res.size() != mat_left.size() || res[0].size() != mat_right[0].size() || mat_left[0].size() != mat_right.size()){
-        std::cerr<<"matrix size error"<<std::endl;
+        std::cerr<<__func__<<" : matrix size error"<<std::endl;
         std::cout<<res.size()<<"="<<mat_left.size()<<std::endl;
         std::cout<<res[0].size()<<"="<<mat_right[0].size()<<std::endl;
         std::cout<<mat_left[0].size()<<"="<<mat_right.size()<<std::endl;

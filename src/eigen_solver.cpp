@@ -4,7 +4,7 @@
 
 #include "eigen_solver.h"
 #include "time_measure.h"
-#include "debug.h"
+//#include "debug.h"
 #include "topopt.h"
 
 static StructureMatrix s_matrix;
@@ -33,7 +33,7 @@ void initSparseMatrix(){
 #endif
 }
 
-void freeSparseMmatrix(){
+void freeSparseMatrix(){
 	// resize
 	s_matrix.mass.resize(0, 0);
 	s_matrix.stiff.resize(0, 0);
@@ -52,15 +52,12 @@ void setSparseMatrix(){
 	double time_start = elapsedTime();
 #endif
 	int i,j, nodeIdx;
-
-	for(i=0;i<structure.num_nodes;i++){
-		int size_of_column_nonzero = adj_matrix.idx[i].size();
+	for(i=0;i<structure.num_nodes*2;i++){
+		int size_of_column_nonzero = adj_matrix.idx[(int)(i/2)].size();
 		for(j=0;j<size_of_column_nonzero;j++){
-			nodeIdx = adj_matrix.idx[i][j];
-			s_matrix.stiff.insert(i*2, nodeIdx*2) = adj_matrix.stiff[i*2][j*2];
-			s_matrix.stiff.insert(i*2, nodeIdx*2+1) = adj_matrix.stiff[i*2][j*2+1];
-			s_matrix.stiff.insert(i*2+1, nodeIdx*2) = adj_matrix.stiff[i*2+1][j*2];
-			s_matrix.stiff.insert(i*2+1, nodeIdx*2+1) = adj_matrix.stiff[i*2+1][j*2+1];
+			nodeIdx = adj_matrix.idx[(int)(i/2)][j];
+			s_matrix.stiff.insert(i, nodeIdx*2) = adj_matrix.stiff[i][j*2];
+			s_matrix.stiff.insert(i, nodeIdx*2+1) = adj_matrix.stiff[i][j*2+1];
 		}
 	}
 #ifdef MEASURE
@@ -159,7 +156,7 @@ void solveLinearEquation2D(){
 	}
 
 	if(is_solved){
-		std::cout<<"Succeeded solveStaticAnalysis\n"<<std::endl;
+		//std::cout<<"Succeeded solveStaticAnalysis\n"<<std::endl;
 	}else{
 		std::cout<<"Failed to solveStaticAnalysis\n"<<std::endl;
 		exit(1);
@@ -255,26 +252,9 @@ void calcCompliance(double& compliance){
 
 void calcSensitivity(TopOptParameter& top){
 	int i,j,node_id;
-	Vector stiff_node = Vector::Zero(structure.num_nodes*2);
-	Vector sens = Vector::Zero(structure.num_nodes*2);
-
-	for(i=0;i<structure.num_nodes;i++){
-		int size_of_column_nonzero = adj_matrix.idx[i].size();
-		for(j=0;j<size_of_column_nonzero;j++){
-			node_id = adj_matrix.idx[i][j];
-			stiff_node(i*2,0)         += adj_matrix.stiff[i*2][j*2];
-			//stiff_node(node_id*2,0)   += adj_matrix.stiff[i*2][j*2];
-			stiff_node(i*2,0)         += adj_matrix.stiff[i*2][j*2+1];
-			//stiff_node(node_id*2+1,0) += adj_matrix.stiff[i*2][j*2+1];
-			stiff_node(i*2+1,0)       += adj_matrix.stiff[i*2+1][j*2];
-			//stiff_node(node_id*2,0)   += adj_matrix.stiff[i*2+1][j*2];
-			stiff_node(i*2+1,0)       += adj_matrix.stiff[i*2+1][j*2+1];
-			//stiff_node(node_id*2+1,0) += adj_matrix.stiff[i*2+1][j*2+1];
-		}
-	}
-	sens = s_vector.disp.transpose() * stiff_node * s_vector.disp;
 	for(i=0;i<(int)(top.sens.size());i++){
-		top.sens[i] = - sens(i,0) * top.pow*(top.E0-top.Emin)*std::pow(top.rho[i],top.pow-1);
+		top.sens[i] = - structure.sensitivity[i]*top.pow*(top.E0-top.Emin)*std::pow(top.rho[i],top.pow-1);
+		//std::cout<<structure.sensitivity[i]<<" "<<top.sens[i]<<" "<<structure.youngs_modulus_nodes[i]<<" "<<top.rho[i]<<std::endl;
 	}
 #ifdef DEBUG
     debugPrintInfo(__func__);

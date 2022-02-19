@@ -2,7 +2,7 @@
 
 #include <vector>
 
-double multi_vec_vec(const std::vector<double>&, const std::vector<double>&,int );
+double multi_vec_vec(const std::vector<double>&, const std::vector<double>&);
 void multi_mat_vec(std::vector<double>&, const std::vector< std::vector<double> >&, const std::vector<double>&);
 void multi_mat_mat(std::vector< std::vector<double> >&, const std::vector< std::vector<double> >&, const std::vector< std::vector<double> >&);
 void transpose_mat(std::vector< std::vector<double> >&, const std::vector< std::vector<double> >&);

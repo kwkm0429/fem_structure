@@ -8,7 +8,7 @@
 
 #include "parameter.h"
 #include "init.h"
-#include "debug.h"
+//#include "debug.h"
 
 /*  parameter setting */
 SimulationParameter sim_prm;
@@ -54,6 +54,7 @@ void readNodeDataFile(){
             structure.force_y               = std::vector<double>(structure.num_nodes,0);
             structure.force_z               = std::vector<double>(structure.num_nodes,0);
             structure.youngs_modulus_nodes  = std::vector<double>(structure.num_nodes,0);
+            structure.sensitivity           = std::vector<double>(structure.num_nodes,0);
         }
         else if(loop>=1 && loop<=structure.num_nodes){
             /* coordinate of nodes */
@@ -254,7 +255,6 @@ void initField(){
         if(structure.is_dirichlet_dz[i]){
         }else{
         }
-        structure.youngs_modulus_nodes[i] = structure.youngs_modulus;
     }
 #ifdef DEBUG
     debugPrintInfo(__func__);

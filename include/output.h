@@ -8,4 +8,4 @@ void outputStrainVtkFile(int);
 void outputStressVtkFile(int);
 void outputDensityVtkFile(int, TopOptParameter&);
 void outputParameterDataFile(void);
-void outputTopOptDataFile(TopOptParameter& top);
+void outputTopOptDataFile(TopOptParameter&);

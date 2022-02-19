@@ -9,7 +9,7 @@
 #include "eigen_solver.h"
 #include "time_measure.h"
 #include "init.h"
-#include "debug.h"
+//#include "debug.h"
 
 void updatePosition(){
 	int i;
@@ -26,6 +26,9 @@ void readInputFiles(){
 	readNodeDataFile();
 	readElemDataFile();
 	readBoundaryDataFile();
+	for(int i=0;i<structure.num_nodes;i++){
+		structure.youngs_modulus_nodes[i] = structure.youngs_modulus;
+	}
 }
 
 void exePostProcess(){
@@ -37,10 +40,13 @@ void exePostProcess(){
 	outputDispVtkFile(1);
 }
 
-void exeStaticAnalysis(){
-    // set initial state and memory
+void initStructureStatus(){
+	// set initial state and memory
     initField();
     initAdjMatrix();
+}
+
+void exeStaticAnalysis(){
 	// output initial state
 	outputParameterDataFile();
 	outputDispVtkFile(0);

@@ -55,6 +55,7 @@ struct StructureParameter{
 	std::vector<std::vector<int>> colored_elem_id;
 	// young's modulus for nodes
 	std::vector<double> youngs_modulus_nodes;
+	std::vector<double> sensitivity;
 };
 
 struct AdjacencyMatrix{

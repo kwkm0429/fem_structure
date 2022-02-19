@@ -1,8 +1,8 @@
 # Topology Optimization Parameters
 #
-VOL_MAX = 0.3
+VOL_MAX = 0.5
 #
-RHO_INIT = 1
+RHO_INIT = 0.5
 #
 E0 = 150000
 #
@@ -10,5 +10,5 @@ Emin = 150
 #
 POW = 3
 #
-ITR_MAX = 5
+ITR_MAX = 50
 #

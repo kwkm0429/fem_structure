@@ -30,7 +30,7 @@ enum ParameterID{
 
 // manage sparse matrix
 void initSparseMatrix(void);
-void freeSparseMmatrix(void);
+void freeSparseMatrix(void);
 void setSparseMatrix(void);
 // boundary condition
 void setBoundaryCondition2D(SpMat&, Vector&, ParameterID);
