@@ -9,7 +9,6 @@
 #include <iomanip>
 
 #include "topopt.h"
-#include "parameter.h"
 #include "structure_solver.h"
 #include "eigen_solver.h"
 #include "output.h"
@@ -17,18 +16,16 @@
 //#include "debug.h"
 #include "fem_matrix.h"
 
-TopOptParameter top;
-
-void readTopOptDataFile(){
+void readTopOptDataFile(TopOpt& top, Sim& sim){
     /* read from "simulation.prm" */
-    std::ifstream ifsb(sim_prm.input_data_dirname + top.params_filename);
-    std::string str;
+    std::ifstream ifsb(sim.input_data_dirname + top.params_filename);
+    std::string string;
     if (ifsb.fail()) {
         std::cerr << "Failed to open " << top.params_filename << std::endl;
         exit(1);
     }
-    while (std::getline(ifsb, str)) {
-        std::stringstream ss(str);
+    while (std::getline(ifsb, string)) {
+        std::stringstream ss(string);
         std::string item;
         std::vector<std::string> list;
         while(std::getline(ss,item,' ')&& !item.empty()){
@@ -58,17 +55,17 @@ void readTopOptDataFile(){
         }
     }
 #ifdef DEBUG
-    debugPrintInfo("Input < "+sim_prm.input_data_dirname + top.params_filename);
+    debugPrintInfo("Input < "+sim.input_data_dirname + top.params_filename);
     debugPrintInfo(__func__);
 #endif
 }
 
-void initTopOpt(){
+void initTopOpt(TopOpt& top, Str& str){
 	int i;
-    top.rho = std::vector<double>(structure.num_nodes,0);
-    top.rho_new = std::vector<double>(structure.num_nodes,0);
-    top.sens = std::vector<double>(structure.num_nodes,0);
-	for(i=0;i<structure.num_nodes;i++){
+    top.rho = std::vector<double>(str.num_nodes,0);
+    top.rho_new = std::vector<double>(str.num_nodes,0);
+    top.sens = std::vector<double>(str.num_nodes,0);
+	for(i=0;i<str.num_nodes;i++){
 		top.rho[i] = top.rho_init;
 	}
     top.comp = top.comp_prev = 0;
@@ -77,16 +74,16 @@ void initTopOpt(){
 #endif
 }
 
-void calcVolume(){
+void calcVolume(TopOpt& top, Str& str){
     int i, j, node_id;
     double vol_domain = 0;
     top.vol_sum = 0;
     top.vol_frac = 0;
-    for(i=0;i<structure.num_elements;i++){
+    for(i=0;i<str.num_elements;i++){
         for(j=0;j<4;j++){
-            node_id = structure.element_node_table[i][j];
-            top.vol_sum += top.rho[node_id] * structure.element_func[i][j];
-            vol_domain += structure.element_func[i][j];
+            node_id = str.element_node_table[i][j];
+            top.vol_sum += top.rho[node_id] * str.element_func[i][j];
+            vol_domain += str.element_func[i][j];
         }
     }
     top.vol_frac = top.vol_sum / vol_domain;
@@ -95,7 +92,7 @@ void calcVolume(){
 #endif
 }
 
-void optOCmethod(){
+void optOCmethod(TopOpt& top){
     int i;
     int rsize=(int)(top.rho.size());
     double lambda1=0, lambda2=1e4, lmid=0;
@@ -129,39 +126,39 @@ void optOCmethod(){
 #endif
 }
 
-void updateYoungsModulus(){
+void updateYoungsModulus(TopOpt& top, Str& str){
     int i;
-    for(i=0;i<structure.num_nodes;i++){
-        structure.youngs_modulus_nodes[i] = (top.E0-top.Emin)*std::pow(top.rho[i], top.pow)+top.Emin;
+    for(i=0;i<str.num_nodes;i++){
+        str.youngs_modulus_nodes[i] = (top.E0-top.Emin)*std::pow(top.rho[i], top.pow)+top.Emin;
     }
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
 }
 
-void exeTopOpt(){
+void exeTopOpt(TopOpt& top, Sim& sim, Str& str, AdjMatrix& adj_mat){
     int i;
     std::cout<<"---------- Topology Optimization Start ----------"<<std::endl;
     // init topopt
-    readTopOptDataFile();
-    initTopOpt();
-    outputDensityVtkFile(0, top);
-    outputTopOptDataFile(top);
+    readTopOptDataFile(top, sim);
+    initTopOpt(top, str);
+    outputDensityVtkFile(0, top, sim, str);
+    outputTopOptDataFile(top, sim);
     
     for(i=0;i<top.itr_max;i++){
-        updateYoungsModulus();
-        exeStaticAnalysis();
-        calcVolume();
+        updateYoungsModulus(top, str);
+        exeStaticAnalysis(sim, str, adj_mat);
+        calcVolume(top, str);
         calcCompliance(top.comp);
         if(std::abs((top.comp - top.comp_prev)*(top.comp - top.comp_prev))<top.comp_conv){// convergence check
             std::cout<<"converged"<<std::endl;
             break;
         }
         top.comp_prev = top.comp;
-        calcElementMatrix2Dquad();
-        calcSensitivity(top);
-        optOCmethod();
-        outputDensityVtkFile(i+1, top);
+        calcElementMatrix2Dquad(sim, str, adj_mat);
+        calcSensitivity(top, str);
+        optOCmethod(top);
+        outputDensityVtkFile(i+1, top, sim, str);
         std::cout.setf(std::ios::left, std::ios::adjustfield);
         std::cout<<" Step: "<<std::setw(4)<<i+1;
         std::cout<<" Volume: "<<std::setw(10)<<top.vol_frac;

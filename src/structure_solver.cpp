@@ -11,71 +11,74 @@
 #include "init.h"
 //#include "debug.h"
 
-void updatePosition(){
+void updatePosition(Str& str){
 	int i;
-	for(int i;i<structure.num_nodes;i++){
-		structure.x[i] += structure.disp_x[i];
-		structure.y[i] += structure.disp_y[i];
-		structure.z[i] += structure.disp_z[i];
+	for(int i;i<str.num_nodes;i++){
+		str.x[i] += str.disp_x[i];
+		str.y[i] += str.disp_y[i];
+		str.z[i] += str.disp_z[i];
 	}
 }
 
-void readInputFiles(){
+void readInputFiles(Sim& sim, Str& str){
 	// read input files
-	readParameterDataFile();
-	readNodeDataFile();
-	readElemDataFile();
-	readBoundaryDataFile();
-	for(int i=0;i<structure.num_nodes;i++){
-		structure.youngs_modulus_nodes[i] = structure.youngs_modulus;
+	readParameterDataFile(sim, str);
+	readNodeDataFile(sim, str);
+	readElemDataFile(sim, str);
+	readBoundaryDataFile(sim, str);
+	for(int i=0;i<str.num_nodes;i++){
+		str.youngs_modulus_nodes[i] = str.youngs_modulus;
 	}
 }
 
-void exePostProcess(){
+void exePostProcess(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	// output
-	calcElementMatrix2Dquad(); //for calc strain and stress
-	outputStrainVtkFile(1);
-	outputStressVtkFile(1);
-	updatePosition();
-	outputDispVtkFile(1);
+	calcElementMatrix2Dquad(sim, str, adj_mat); //for calc strain and stress
+	outputStrainVtkFile(1, sim, str);
+	outputStressVtkFile(1, sim, str);
+	updatePosition(str);
+	outputDispVtkFile(1,sim, str);
 }
 
-void initStructureStatus(){
+void initStructureStatus(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	// set initial state and memory
-    initField();
-    initAdjMatrix();
+    initField(sim, str);
+    initAdjMatrix(sim, str, adj_mat);
 }
 
-void exeStaticAnalysis(){
+void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	// output initial state
-	outputParameterDataFile();
-	outputDispVtkFile(0);
-	outputStrainVtkFile(0);
-	outputStressVtkFile(0);
+	outputParameterDataFile(sim);
+	outputDispVtkFile(0, sim, str);
+	outputStrainVtkFile(0, sim, str);
+	outputStressVtkFile(0, sim, str);
 	// calculate boundary shape function
-	calcBoundaryShapeFunction();
+	calcBoundaryShapeFunction(sim, str);
 	// coloring Elements for Element Matrix Parallelization
-	coloringElements();
+	coloringElements(sim, str);
 	
 #ifdef MEASURE
-	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);
+	std::ofstream ofs(sim.time_output_filename, std::ios::app);
 #endif
 	// initialize sparse matrixs
-	initSparseMatrix();
-	if(sim_prm.dim == 2){
-		calcElementMatrix2Dquad();
-	}else if(sim_prm.dim == 3){
-		calcElementMatrix3Dtetra();
+	initSparseMatrix(sim, str);
+	if(sim.dim == 2){
+		calcElementMatrix2Dquad(sim, str, adj_mat);
+	}else if(sim.dim == 3){
+		calcElementMatrix3Dtetra(sim, str, adj_mat);
 	}else{
-		std::cout<<"Dimension Error: "<<sim_prm.dim<<std::endl;
+		std::cout<<"Dimension Error: "<<sim.dim<<std::endl;
 		exit(1);
 	}
 	// set sparse matrix
-	setSparseMatrix();
-	// solve KU=F
-	solveLinearEquation2D();
+	setSparseMatrix(sim, str, adj_mat);
+	solveLinearEquation2D(sim, str);
 
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
+}
+
+
+void exeBucklingAnalysis(){
 }

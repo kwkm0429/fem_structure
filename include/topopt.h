@@ -3,7 +3,9 @@
 #include <string>
 #include <vector>
 
-struct TopOptParameter{
+#include "parameter.h"
+
+struct TopOpt{
 	const std::string params_filename = "top.prm";
 	
 	std::vector<double> rho;
@@ -23,9 +25,9 @@ struct TopOptParameter{
 	double comp_conv;
 };
 
-void readTopOptDataFile(void);
-void initTopOpt(void);
-void updateYoungsModulus(void);
-void calcVolume(void);
-void optOCmethod(void);
-void exeTopOpt(void);
+void readTopOptDataFile(TopOpt& top, Sim& sim);
+void initTopOpt(TopOpt& top, Str& str);
+void updateYoungsModulus(TopOpt& top, Str& str);
+void calcVolume(TopOpt& top, Str& str);
+void optOCmethod(TopOpt& top);
+void exeTopOpt(TopOpt& top, Sim& sim, Str& str, AdjMatrix& adj_mat);

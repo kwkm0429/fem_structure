@@ -1,7 +1,10 @@
 #pragma once
 
-void updatePosition(void);
-void readInputFiles(void);
-void initStructureStatus(void);
-void exePostProcess(void);
-void exeStaticAnalysis(void);
+#include "parameter.h"
+
+void updatePosition(Str& str);
+void readInputFiles(Sim& sim, Str& str);
+void initStructureStatus(Sim& sim, Str& str, AdjMatrix& adj_mat);
+void exePostProcess(Sim& sim, Str& str, AdjMatrix& adj_mat);
+void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat);
+void exeBucklingAnalysis(void);

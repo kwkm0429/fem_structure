@@ -11,17 +11,28 @@ int main(){
 	initializeTime();
 #endif
 
-	readInputFiles();
-	initStructureStatus();
-	if(sim_prm.is_topopt){
-		exeTopOpt();
-	}else{
-		exeStaticAnalysis();
-		exePostProcess();
+	Sim sim; // struct for simulation setup parameter
+	Str str; // struct for structure parameter
+	AdjMatrix adj_mat; // adjacency matrix for connectivity
+	TopOpt top; // struct for topology optimization
+
+	readInputFiles(sim, str);
+	initStructureStatus(sim, str, adj_mat);
+	switch(sim.id){
+		case 0:
+			exeTopOpt(top, sim, str, adj_mat);
+		case 1:
+			exeStaticAnalysis(sim, str, adj_mat);
+			exePostProcess(sim, str, adj_mat);
+			break;
+		case 2:
+			
+		default:
+			break;
 	}
 
 #ifdef MEASURE
-	std::ofstream ofs(sim_prm.time_output_filename, std::ios::app);
+	std::ofstream ofs(sim.time_output_filename, std::ios::app);
 	ofs<<"SIMULATION-ENTIRE-TIME: "<<elapsedTime()/1000<<" [s]"<<std::endl;
 	ofs.close();
 #endif

@@ -11,44 +11,44 @@
 //#include "debug.h"
 #include "topopt.h"
 
-void outputDispVtkFile(int number){
+void outputDispVtkFile(int number, Sim& sim, Str& str){
 	int i,j;
 	char head[16]="disp";
 	char end[16]=".vtk";
 	char filename[256];
 	sprintf(filename,"%s%d%s",head,number,end);
-	std::ofstream ofs(sim_prm.output_data_dirname + filename);
+	std::ofstream ofs(sim.output_data_dirname + filename);
 	ofs<<"# vtk DataFile Version 4.0"<<std::endl;
 	ofs<<"scalar"<<std::endl;
 	ofs<<"ASCII"<<std::endl;
 	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
-	ofs<<"POINTS "<<structure.num_nodes<<" float"<<std::endl;
-	for(i=0;i<structure.num_nodes;i++){
-		ofs<<structure.x[i]<<" "<<structure.y[i]<<" "<<structure.z[i]<<std::endl;
+	ofs<<"POINTS "<<str.num_nodes<<" float"<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<str.x[i]<<" "<<str.y[i]<<" "<<str.z[i]<<std::endl;
 	}
-	ofs<<"CELLS "<<structure.num_elements<<" "<<5*structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<sim_prm.num_polygon_corner<<" ";
-		for(j=0;j<sim_prm.num_polygon_corner;j++){
-			ofs<<structure.element_node_table[i][j];
-			if(j!=sim_prm.num_polygon_corner-1)ofs<<" ";
+	ofs<<"CELLS "<<str.num_elements<<" "<<5*str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<sim.num_polygon_corner<<" ";
+		for(j=0;j<sim.num_polygon_corner;j++){
+			ofs<<str.element_node_table[i][j];
+			if(j!=sim.num_polygon_corner-1)ofs<<" ";
 			else ofs<<std::endl;
 		}
 	}
-	ofs<<"CELL_TYPES "<<structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		if(sim_prm.dim == 2)ofs<<9<<std::endl;
-		else if(sim_prm.dim == 3)ofs<<10<<std::endl;
+	ofs<<"CELL_TYPES "<<str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		if(sim.dim == 2)ofs<<9<<std::endl;
+		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
-	ofs<<"POINT_DATA "<<structure.num_nodes<<std::endl;
+	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
 	ofs<<"VECTORS velocity float"<<std::endl;
-	for(i=0;i<structure.num_nodes;i++){
-		ofs<<structure.disp_x[i]<<" "<<structure.disp_y[i]<<" "<<structure.disp_z[i]<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<str.disp_x[i]<<" "<<str.disp_y[i]<<" "<<str.disp_z[i]<<std::endl;
 	}
 	ofs<<"SCALARS point_scalars float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
-	for(i=0;i<structure.num_nodes;i++){
-		ofs<<std::sqrt(structure.disp_x[i]*structure.disp_x[i]+structure.disp_y[i]*structure.disp_y[i]+structure.disp_z[i]*structure.disp_z[i])<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<std::sqrt(str.disp_x[i]*str.disp_x[i]+str.disp_y[i]*str.disp_y[i]+str.disp_z[i]*str.disp_z[i])<<std::endl;
 	}
 	ofs.close();
 #ifdef DEBUG
@@ -56,44 +56,44 @@ void outputDispVtkFile(int number){
 #endif
 }
 
-void outputStrainVtkFile(int number){
+void outputStrainVtkFile(int number, Sim& sim, Str& str){
 	int i,j;
 	char head[16]="strain";
 	char end[16]=".vtk";
 	char filename[256];
 	sprintf(filename,"%s%d%s",head,number,end);
-	std::ofstream ofs(sim_prm.output_data_dirname + filename);
+	std::ofstream ofs(sim.output_data_dirname + filename);
 	ofs<<"# vtk DataFile Version 4.0"<<std::endl;
 	ofs<<"scalar"<<std::endl;
 	ofs<<"ASCII"<<std::endl;
 	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
-	ofs<<"POINTS "<<structure.num_nodes<<" float"<<std::endl;
-	for(i=0;i<structure.num_nodes;i++){
-		ofs<<structure.x[i]<<" "<<structure.y[i]<<" "<<structure.z[i]<<std::endl;
+	ofs<<"POINTS "<<str.num_nodes<<" float"<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<str.x[i]<<" "<<str.y[i]<<" "<<str.z[i]<<std::endl;
 	}
-	ofs<<"CELLS "<<structure.num_elements<<" "<<5*structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<sim_prm.num_polygon_corner<<" ";
-		for(j=0;j<sim_prm.num_polygon_corner;j++){
-			ofs<<structure.element_node_table[i][j];
-			if(j!=sim_prm.num_polygon_corner-1)ofs<<" ";
+	ofs<<"CELLS "<<str.num_elements<<" "<<5*str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<sim.num_polygon_corner<<" ";
+		for(j=0;j<sim.num_polygon_corner;j++){
+			ofs<<str.element_node_table[i][j];
+			if(j!=sim.num_polygon_corner-1)ofs<<" ";
 			else ofs<<std::endl;
 		}
 	}
-	ofs<<"CELL_TYPES "<<structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		if(sim_prm.dim == 2)ofs<<9<<std::endl;
-		else if(sim_prm.dim == 3)ofs<<10<<std::endl;
+	ofs<<"CELL_TYPES "<<str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		if(sim.dim == 2)ofs<<9<<std::endl;
+		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
-	ofs<<"CELL_DATA "<<structure.num_elements<<std::endl;
+	ofs<<"CELL_DATA "<<str.num_elements<<std::endl;
 	ofs<<"VECTORS strain float"<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<structure.strain_x[i]<<" "<<structure.strain_y[i]<<" "<<structure.strain_z[i]<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<str.strain_x[i]<<" "<<str.strain_y[i]<<" "<<str.strain_z[i]<<std::endl;
 	}
 	ofs<<"SCALARS point_scalars float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<std::sqrt(structure.strain_x[i]*structure.strain_x[i]+structure.strain_y[i]*structure.strain_y[i]+structure.strain_z[i]*structure.strain_z[i])<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<std::sqrt(str.strain_x[i]*str.strain_x[i]+str.strain_y[i]*str.strain_y[i]+str.strain_z[i]*str.strain_z[i])<<std::endl;
 	}
 	ofs.close();
 #ifdef DEBUG
@@ -101,44 +101,44 @@ void outputStrainVtkFile(int number){
 #endif
 }
 
-void outputStressVtkFile(int number){
+void outputStressVtkFile(int number, Sim& sim, Str& str){
 	int i,j;
 	char head[16]="stress";
 	char end[16]=".vtk";
 	char filename[256];
 	sprintf(filename,"%s%d%s",head,number,end);
-	std::ofstream ofs(sim_prm.output_data_dirname + filename);
+	std::ofstream ofs(sim.output_data_dirname + filename);
 	ofs<<"# vtk DataFile Version 4.0"<<std::endl;
 	ofs<<"scalar"<<std::endl;
 	ofs<<"ASCII"<<std::endl;
 	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
-	ofs<<"POINTS "<<structure.num_nodes<<" float"<<std::endl;
-	for(i=0;i<structure.num_nodes;i++){
-		ofs<<structure.x[i]<<" "<<structure.y[i]<<" "<<structure.z[i]<<std::endl;
+	ofs<<"POINTS "<<str.num_nodes<<" float"<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<str.x[i]<<" "<<str.y[i]<<" "<<str.z[i]<<std::endl;
 	}
-	ofs<<"CELLS "<<structure.num_elements<<" "<<5*structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<sim_prm.num_polygon_corner<<" ";
-		for(j=0;j<sim_prm.num_polygon_corner;j++){
-			ofs<<structure.element_node_table[i][j];
-			if(j!=sim_prm.num_polygon_corner-1)ofs<<" ";
+	ofs<<"CELLS "<<str.num_elements<<" "<<5*str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<sim.num_polygon_corner<<" ";
+		for(j=0;j<sim.num_polygon_corner;j++){
+			ofs<<str.element_node_table[i][j];
+			if(j!=sim.num_polygon_corner-1)ofs<<" ";
 			else ofs<<std::endl;
 		}
 	}
-	ofs<<"CELL_TYPES "<<structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		if(sim_prm.dim == 2)ofs<<9<<std::endl;
-		else if(sim_prm.dim == 3)ofs<<10<<std::endl;
+	ofs<<"CELL_TYPES "<<str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		if(sim.dim == 2)ofs<<9<<std::endl;
+		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
-	ofs<<"CELL_DATA "<<structure.num_elements<<std::endl;
+	ofs<<"CELL_DATA "<<str.num_elements<<std::endl;
 	ofs<<"VECTORS stress float"<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<structure.stress_x[i]<<" "<<structure.stress_y[i]<<" "<<structure.stress_z[i]<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<str.stress_x[i]<<" "<<str.stress_y[i]<<" "<<str.stress_z[i]<<std::endl;
 	}
 	ofs<<"SCALARS point_scalars float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<std::sqrt(structure.stress_x[i]*structure.stress_x[i]+structure.stress_y[i]*structure.stress_y[i]+structure.stress_z[i]*structure.stress_z[i])<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<std::sqrt(str.stress_x[i]*str.stress_x[i]+str.stress_y[i]*str.stress_y[i]+str.stress_z[i]*str.stress_z[i])<<std::endl;
 	}
 	ofs.close();
 #ifdef DEBUG
@@ -146,39 +146,39 @@ void outputStressVtkFile(int number){
 #endif
 }
 
-void outputDensityVtkFile(int number, TopOptParameter& top){
+void outputDensityVtkFile(int number, TopOpt& top, Sim& sim, Str& str){
 	int i,j;
 	char head[16]="density";
 	char end[16]=".vtk";
 	char filename[256];
 	sprintf(filename,"%s%d%s",head,number,end);
-	std::ofstream ofs(sim_prm.output_data_dirname + filename);
+	std::ofstream ofs(sim.output_data_dirname + filename);
 	ofs<<"# vtk DataFile Version 4.0"<<std::endl;
 	ofs<<"scalar"<<std::endl;
 	ofs<<"ASCII"<<std::endl;
 	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
-	ofs<<"POINTS "<<structure.num_nodes<<" float"<<std::endl;
-	for(i=0;i<structure.num_nodes;i++){
-		ofs<<structure.x[i]<<" "<<structure.y[i]<<" "<<structure.z[i]<<std::endl;
+	ofs<<"POINTS "<<str.num_nodes<<" float"<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<str.x[i]<<" "<<str.y[i]<<" "<<str.z[i]<<std::endl;
 	}
-	ofs<<"CELLS "<<structure.num_elements<<" "<<5*structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		ofs<<sim_prm.num_polygon_corner<<" ";
-		for(j=0;j<sim_prm.num_polygon_corner;j++){
-			ofs<<structure.element_node_table[i][j];
-			if(j!=sim_prm.num_polygon_corner-1)ofs<<" ";
+	ofs<<"CELLS "<<str.num_elements<<" "<<5*str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<sim.num_polygon_corner<<" ";
+		for(j=0;j<sim.num_polygon_corner;j++){
+			ofs<<str.element_node_table[i][j];
+			if(j!=sim.num_polygon_corner-1)ofs<<" ";
 			else ofs<<std::endl;
 		}
 	}
-	ofs<<"CELL_TYPES "<<structure.num_elements<<std::endl;
-	for(i=0;i<structure.num_elements;i++){
-		if(sim_prm.dim == 2)ofs<<9<<std::endl;
-		else if(sim_prm.dim == 3)ofs<<10<<std::endl;
+	ofs<<"CELL_TYPES "<<str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		if(sim.dim == 2)ofs<<9<<std::endl;
+		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
-	ofs<<"POINT_DATA "<<structure.num_nodes<<std::endl;
+	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
 	ofs<<"SCALARS point_scalars float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
-	for(i=0;i<structure.num_nodes;i++){
+	for(i=0;i<str.num_nodes;i++){
 		ofs<<top.rho[i]<<std::endl;
 	}
 	ofs.close();
@@ -187,19 +187,18 @@ void outputDensityVtkFile(int number, TopOptParameter& top){
 #endif
 }
 
-void outputParameterDataFile(){
+void outputParameterDataFile(Sim& sim){
 	char filename[32]="param.log";
-	std::ofstream ofs(sim_prm.output_data_dirname + filename);
-	ofs<<"DIMENSION = "<<sim_prm.dim<<std::endl;
-	ofs<<"SHAPE_NUMBER = "<<sim_prm.num_polygon_corner<<std::endl;
-	ofs<<"TIME_STEP = "<<sim_prm.max_time_step<<std::endl;
-	ofs<<"OUTPUT_INTERVAL = "<<sim_prm.output_interval<<std::endl;
-	ofs<<"DT = "<<sim_prm.dt<<std::endl;
-	ofs<<"GRAVITY_X = "<<sim_prm.gravity_x<<std::endl;
-	ofs<<"GRAVITY_Y = "<<sim_prm.gravity_y<<std::endl;
-	ofs<<"GRAVITY_Z = "<<sim_prm.gravity_z<<std::endl;
-	ofs<<"FLUID_DENSITY = "<<structure.density<<std::endl;
-	ofs<<"EQUATION_SOLVER = "<<sim_prm.eq_solver_opt<<std::endl;
+	std::ofstream ofs(sim.output_data_dirname + filename);
+	ofs<<"DIMENSION = "<<sim.dim<<std::endl;
+	ofs<<"SHAPE_NUMBER = "<<sim.num_polygon_corner<<std::endl;
+	ofs<<"TIME_STEP = "<<sim.max_time_step<<std::endl;
+	ofs<<"OUTPUT_INTERVAL = "<<sim.output_interval<<std::endl;
+	ofs<<"DT = "<<sim.dt<<std::endl;
+	ofs<<"GRAVITY_X = "<<sim.gravity_x<<std::endl;
+	ofs<<"GRAVITY_Y = "<<sim.gravity_y<<std::endl;
+	ofs<<"GRAVITY_Z = "<<sim.gravity_z<<std::endl;
+	ofs<<"EQUATION_SOLVER = "<<sim.eq_solver_opt<<std::endl;
 	char* num_threads = getenv("OMP_NUM_THREADS");
 	if(num_threads!=NULL){
 		ofs<<"OMP_NUM_THREADS = "<<num_threads<<std::endl;
@@ -212,9 +211,9 @@ void outputParameterDataFile(){
 	ofs.close();
 }
 
-void outputTopOptDataFile(TopOptParameter& top){
+void outputTopOptDataFile(TopOpt& top, Sim& sim){
 	char filename[32]="top.log";
-	std::ofstream ofs(sim_prm.output_data_dirname + filename);
+	std::ofstream ofs(sim.output_data_dirname + filename);
 	ofs<<"VOL_MAX = "<<top.vol_max<<std::endl;
 	ofs<<"RHO_INIT = "<<top.rho_init<<std::endl;
 	ofs<<"E0 = "<<top.E0<<std::endl;

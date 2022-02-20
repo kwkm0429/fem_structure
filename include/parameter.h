@@ -4,7 +4,7 @@
 #include <string>
 
 // parameters
-struct SimulationParameter{
+struct Sim{
 	const std::string time_output_filename = "data-output/time.log";
 	const std::string input_data_dirname   = "data-input/";
 	const std::string output_data_dirname  = "data-output/";
@@ -24,10 +24,10 @@ struct SimulationParameter{
 	int num_polygon_corner;
 	int num_nonzero;
 	int dim;
-	bool is_topopt;
+	int id;
 };
 
-struct StructureParameter{
+struct Str{
 	int num_nodes;
 	int num_elements;
 	double density;
@@ -58,11 +58,7 @@ struct StructureParameter{
 	std::vector<double> sensitivity;
 };
 
-struct AdjacencyMatrix{
+struct AdjMatrix{
 	std::vector< std::vector<int> > idx;
-	std::vector< std::vector<double> > mass, stiff, damping;
+	std::vector< std::vector<double> > stiff, stiff_geo;
 };
-
-extern SimulationParameter sim_prm;
-extern StructureParameter structure;
-extern AdjacencyMatrix adj_matrix;

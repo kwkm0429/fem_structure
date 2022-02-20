@@ -15,7 +15,7 @@ typedef Eigen::VectorXd Vector;
 typedef Eigen::MatrixXd Matrix;
 
 struct StructureMatrix{
-	SpMat mass, stiff, damping;
+	SpMat stiff, stiff_geo;
 };
 
 struct StructureVector{
@@ -29,17 +29,20 @@ enum ParameterID{
 };
 
 // manage sparse matrix
-void initSparseMatrix(void);
-void freeSparseMatrix(void);
-void setSparseMatrix(void);
+void initSparseMatrix(Sim& sim, Str& str);
+void freeSparseMatrix(Sim& sim, Str& str);
+void setSparseMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat);
 // boundary condition
-void setBoundaryCondition2D(SpMat&, Vector&, ParameterID);
+void setBoundaryCondition2D(SpMat&, Vector&, ParameterID, Sim& sim, Str& str);
 // solve linear equation
-void solveLinearEquation2D(void);
+void solveLinearEquation2D(Sim& sim, Str& str);
 // linear solver
-bool eigenSolver(SpMat& A, Vector& x, Vector& b);
+bool eigenSolver(SpMat& A, Vector& x, Vector& b, Sim& sim);
 bool eigenLU(SpMat& A, Vector& x, Vector& b);
 bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b);
+// buckling solver
+void solveBuckling2D(Sim& sim, Str& str);
+bool EigenValueSolver(SpMat& A, SpMat& B);
 // topology optimization
 void calcCompliance(double& compliance);
-void calcSensitivity(TopOptParameter& top);
+void calcSensitivity(TopOpt& top, Str& str);
