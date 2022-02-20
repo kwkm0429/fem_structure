@@ -24,5 +24,5 @@ EQUATION_SOLVER = 0 (0:LU 1:BiCGSTAB)
 #
 THICKNESS = 50 [mm]
 #
-ID = 0
+ID = 2 (0:Topology Optimization, 1:Static Analysis, 2:Buckling Analysis)
 #

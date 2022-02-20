@@ -6,7 +6,6 @@
 #include <vector>
 #include <sstream>
 
-#include "parameter.h"
 #include "init.h"
 //#include "debug.h"
 
@@ -50,6 +49,9 @@ void readNodeDataFile(Sim& sim, Str& str){
             str.force_z               = std::vector<double>(str.num_nodes,0);
             str.youngs_modulus_nodes  = std::vector<double>(str.num_nodes,0);
             str.sensitivity           = std::vector<double>(str.num_nodes,0);
+            str.buckling_x            = std::vector<double>(str.num_nodes,0);
+            str.buckling_y            = std::vector<double>(str.num_nodes,0);
+            str.buckling_z            = std::vector<double>(str.num_nodes,0);
         }
         else if(loop>=1 && loop<=str.num_nodes){
             /* coordinate of nodes */

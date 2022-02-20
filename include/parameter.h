@@ -56,6 +56,9 @@ struct Str{
 	// young's modulus for nodes
 	std::vector<double> youngs_modulus_nodes;
 	std::vector<double> sensitivity;
+	// buckling
+	double buckling_coeff;
+	std::vector<double> buckling_x, buckling_y, buckling_z;
 };
 
 struct AdjMatrix{

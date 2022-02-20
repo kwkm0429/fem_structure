@@ -4,7 +4,7 @@
 
 #include "eigen_solver.h"
 #include "time_measure.h"
-//#include "debug.h"
+#include "debug.h"
 #include "topopt.h"
 
 static StructureMatrix s_mat;
@@ -31,7 +31,7 @@ void initSparseMatrix(Sim& sim, Str& str){
 #endif
 }
 
-void freeSparseMatrix(Sim& sim, Str& str){
+void freeSparseMatrix(){
 	// resize
 	s_mat.stiff.resize(0, 0);
 	s_mat.stiff_geo.resize(0, 0);
@@ -241,19 +241,14 @@ bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b){
 void solveBuckling2D(Sim& sim, Str& str){
 	int i;
 	bool is_solved = true;
-	Vector rhs = Vector::Zero(str.num_nodes*2);
-	s_vec.disp = Vector::Zero(str.num_nodes*2);
-
-	// set boundary condition
-	setBoundaryCondition2D(s_mat.stiff, rhs, sim, str);
-
-	// check matrix and rhs
-	//std::cout<<"check stiffness matrix"<<std::endl;
-	//std::cout<<s_mat.stiff_geo<<std::endl;
+	Vector v = Vector::Zero(str.num_nodes*2);
 
 	// solve (KL+\lambda KG)\phi = 0
-	is_solved = EigenValueSolver(s_mat.stiff, s_mat.stiff_geo);
-
+	is_solved = EigenValueSolver(s_mat.stiff, s_mat.stiff_geo, v, str.buckling_coeff);
+	for(i=0;i<str.num_nodes;i++){
+		str.buckling_x[i] = v[i*2];
+		str.buckling_y[i] = v[i*2+1];
+	}
 	if(!is_solved){
 		std::cout<<"Failed "<<__func__<<std::endl;
 		exit(1);
@@ -263,16 +258,34 @@ void solveBuckling2D(Sim& sim, Str& str){
 #endif
 }
 
-bool EigenValueSolver(SpMat& A, SpMat& B){
+bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, double& lambda){
+	int i, size;
+
 	Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es(A,B);
-	std::cout << "The eigenvalues of the pencil (A,B) are:" << std::endl << es.eigenvalues() << std::endl;
-	std::cout << "The matrix of eigenvectors, V, is:" << std::endl << es.eigenvectors() << std::endl << std::endl;
-	 
-	double lambda = es.eigenvalues()[0];
+	//std::cout << "The eigenvalues of the pencil (A,B) are:" << std::endl << es.eigenvalues() << std::endl;
+	//std::cout << "The matrix of eigenvectors, V, is:" << std::endl << es.eigenvectors() << std::endl << std::endl;
+	
+	size = es.eigenvalues().size();
+	for(i=0;i<size;i++){
+		if(es.eigenvalues()[i]>0){
+			lambda=es.eigenvalues()[i];
+			break;
+		}
+	}
+	//lambda = es.eigenvalues()[0];
 	std::cout << "Consider the first eigenvalue, lambda = " << lambda << std::endl;
-	Vector v = es.eigenvectors().col(0);
-	std::cout << "If v is the corresponding eigenvector, then A * v = " << std::endl << A * v << std::endl;
-	std::cout << "... and lambda * B * v = " << std::endl << lambda * B * v << std::endl << std::endl;
+	v = es.eigenvectors().col(i);
+	//std::cout << "If v is the corresponding eigenvector, then A * v = " << std::endl << A * v << std::endl;
+	//std::cout << "... and lambda * B * v = " << std::endl << lambda * B * v << std::endl << std::endl;
+	if(es.info()!=Eigen::Success) {
+		// solving failed
+		std::cout<<"Failed solver BiCGSTAB"<<std::endl;
+		return false;
+	}
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+	return true;
 }
 
 // Topology Optimization

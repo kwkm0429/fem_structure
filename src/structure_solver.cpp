@@ -32,8 +32,15 @@ void readInputFiles(Sim& sim, Str& str){
 }
 
 void exePostProcess(Sim& sim, Str& str, AdjMatrix& adj_mat){
-	// output
-	calcElementMatrix2Dquad(sim, str, adj_mat); //for calc strain and stress
+	 // calculate strain and stress
+	if(sim.dim == 2){
+		calcElementMatrix2Dquad(sim, str, adj_mat);
+	}else if(sim.dim == 3){
+		calcElementMatrix3Dtetra(sim, str, adj_mat);
+	}else{
+		std::cout<<"Dimension Error: "<<sim.dim<<std::endl;
+		exit(1);
+	}
 	outputStrainVtkFile(1, sim, str);
 	outputStressVtkFile(1, sim, str);
 	updatePosition(str);
@@ -72,6 +79,7 @@ void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	}
 	// set sparse matrix
 	setSparseMatrix(sim, str, adj_mat);
+	// solve
 	solveLinearEquation2D(sim, str);
 
 #ifdef DEBUG
@@ -80,5 +88,26 @@ void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 }
 
 
-void exeBucklingAnalysis(){
+void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
+	exeStaticAnalysis(sim, str, adj_mat);
+	exePostProcess(sim, str, adj_mat);
+	if(sim.dim == 2){
+		calcElementMatrix2Dquad(sim, str, adj_mat);
+	}else if(sim.dim == 3){
+		calcElementMatrix3Dtetra(sim, str, adj_mat);
+	}else{
+		std::cout<<"Dimension Error: "<<sim.dim<<std::endl;
+		exit(1);
+	}
+	// set sparse matrix
+	freeSparseMatrix();
+	initSparseMatrix(sim, str);
+	setSparseMatrix(sim, str, adj_mat);
+	// solve
+	solveBuckling2D(sim, str);
+	// output
+	outputBucklingVtkFile(1, sim, str);
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
 }

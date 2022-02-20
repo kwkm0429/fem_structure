@@ -30,7 +30,7 @@ enum ParameterID{
 
 // manage sparse matrix
 void initSparseMatrix(Sim& sim, Str& str);
-void freeSparseMatrix(Sim& sim, Str& str);
+void freeSparseMatrix();
 void setSparseMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat);
 // boundary condition
 void setBoundaryCondition2D(SpMat&, Vector&, ParameterID, Sim& sim, Str& str);
@@ -42,7 +42,7 @@ bool eigenLU(SpMat& A, Vector& x, Vector& b);
 bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b);
 // buckling solver
 void solveBuckling2D(Sim& sim, Str& str);
-bool EigenValueSolver(SpMat& A, SpMat& B);
+bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, double& lambda);
 // topology optimization
 void calcCompliance(double& compliance);
 void calcSensitivity(TopOpt& top, Str& str);

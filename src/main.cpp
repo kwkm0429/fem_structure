@@ -19,14 +19,16 @@ int main(){
 	readInputFiles(sim, str);
 	initStructureStatus(sim, str, adj_mat);
 	switch(sim.id){
-		case 0:
+		case 0: // topology optimization
 			exeTopOpt(top, sim, str, adj_mat);
-		case 1:
+			break;
+		case 1: // static analysis
 			exeStaticAnalysis(sim, str, adj_mat);
 			exePostProcess(sim, str, adj_mat);
 			break;
-		case 2:
-			
+		case 2: // buckling analysis
+			exeBucklingAnalysis(sim, str, adj_mat);
+			break;
 		default:
 			break;
 	}

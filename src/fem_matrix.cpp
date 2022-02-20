@@ -10,7 +10,7 @@
 #include "time_measure.h"
 #include "eigen_solver.h"
 #include "matrix_calc.h"
-//#include "debug.h"
+#include "debug.h"
 
 void calcJacobian(
 	int k, 
@@ -69,20 +69,64 @@ void calcJacobian(
 	}
 }
 
-void calcStiffnessMatrix(
-	std::vector<std::vector<double>>& K,
-	std::vector<std::vector<double>>& B,
-	std::vector<std::vector<double>>& D){
+void calcStiffnessMatrix(std::vector<std::vector<double>>& K, std::vector<std::vector<double>>& B, std::vector<std::vector<double>>& D){
 	int i, j;
 	std::vector<std::vector<double>> temp = std::vector< std::vector<double> >(8,std::vector<double>(3,0));
 	std::vector<std::vector<double>> Bt = std::vector< std::vector<double> >(8,std::vector<double>(3,0));
-	for(i=0;i<8;i++){
-		for(j=0;j<3;j++){
-			Bt[i][j] = B[j][i];
-		}
-	}
+
+	transpose_mat(Bt, B);
 	multi_mat_mat(temp, Bt, D);
 	multi_mat_mat(K, temp, B);
+}
+
+void calcDMatrix2DPlaneStress(std::vector<std::vector<double>>& D, Str& str){
+	int i, j;
+	D = {
+		{1, str.poisson_ratio, 0},
+		{str.poisson_ratio, 1, 0},
+		{0, 0, (1-str.poisson_ratio)/2}};
+	for(i=0;i<3;i++){
+		for(j=0;j<3;j++){
+			D[i][j] *= 1 / (1 - str.poisson_ratio * str.poisson_ratio); // without Youngs modulus
+		}
+	}
+}
+
+void calcBMatrix2D(std::vector<std::vector<double>>& B, std::vector<double>& dN_dx, std::vector<double>& dN_dy, int j){
+	int i;
+	for(i=0;i<4;i++){
+		B[0][i*2]   = dN_dx[j*4+i];
+		B[1][i*2+1] = dN_dy[j*4+i];
+		B[2][i*2]   = dN_dy[j*4+i];
+		B[2][i*2+1] = dN_dx[j*4+i];
+	}
+}
+
+void calcDiffMatrix2D(std::vector<std::vector<double>>& Diff, std::vector<double>& dN_dx, std::vector<double>& dN_dy, int j){
+	int i;
+	for(i=0;i<4;i++){
+		Diff[0][i*2]   = dN_dx[j*4+i];
+		Diff[1][i*2+1] = dN_dx[j*4+i];
+		Diff[2][i*2]   = dN_dy[j*4+i];
+		Diff[3][i*2+1] = dN_dy[j*4+i];
+	}
+}
+
+void calcStressMatrix2D(std::vector<std::vector<double>>& S, double sigma_x, double sigma_y, double sigma_xy){
+	S[0][0] = sigma_x; S[0][1] = 0;       S[0][2] = sigma_xy;S[0][3] = 0;
+	S[1][0] = 0;       S[1][1] = sigma_x; S[1][2] = 0;       S[1][3] = sigma_xy;
+	S[2][0] = sigma_xy;S[2][1] = 0;       S[2][2] = sigma_y; S[2][3] = 0;
+	S[3][0] = 0;       S[3][1] = sigma_xy;S[3][2] = 0;       S[3][3] = sigma_y;
+}
+
+void calcStiffGeoMatrix2D(std::vector<std::vector<double>>& Kg, std::vector<std::vector<double>>& Diff, std::vector<std::vector<double>>& S){
+	int i, j;
+	std::vector<std::vector<double>> temp = std::vector< std::vector<double> >(8,std::vector<double>(4,0));
+	std::vector<std::vector<double>> Difft = std::vector< std::vector<double> >(8,std::vector<double>(4,0));
+
+	transpose_mat(Difft, Diff);
+	multi_mat_mat(temp, Difft, S);
+	multi_mat_mat(Kg, temp, Diff);
 }
 
 void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
@@ -90,7 +134,7 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	double time_start = elapsedTime();
 #endif
 	int node_id1 = 0, node_id2 = 0, node_id3 = 0, node_id4 = 0;
-	int i = 0, j = 0, k = 0, l = 0, m=0, ne1 = 0, ne2 = 0, ne3 = 0, ne4 = 0;
+	int i = 0, j = 0, k = 0, l = 0, ne1 = 0, ne2 = 0, ne3 = 0, ne4 = 0;
 	double detJ = 0;
 	std::vector<int> node_id = std::vector<int>(4,0);
 	std::vector<double> x     = std::vector<double>(4,0);
@@ -105,9 +149,15 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	std::vector<std::vector<double>> strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0)); // B matrix
 	std::vector<std::vector<double>> stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));	// D matrix
 	std::vector<std::vector<double>> stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // K matrix
+	std::vector<std::vector<double>> stiff_matrix_temp = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // K temp
+	// topology optimization
 	std::vector<std::vector<double>> stiff_top_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0));
+	// Kg matrix
+	std::vector<std::vector<double>> stiff_geo_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // Kg matrix
+	std::vector<std::vector<double>> stiff_geo_matrix_temp = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // Kg matrix
+	std::vector<std::vector<double>> stress_matrix = std::vector< std::vector<double> >(4,std::vector<double>(4,0)); // stress matrix
+	std::vector<std::vector<double>> diff_matrix = std::vector< std::vector<double> >(4,std::vector<double>(8,0)); // differential matrix
 
-	double mass = 0, stiff = 0, damping = 0;
 	int connect_check = 0;
 	int size_of_column_nonzero = 0;
 	// fluid local variables for OpenMP parallel
@@ -128,9 +178,9 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 		#pragma omp parallel
 		{
 		#pragma omp for firstprivate(node_id, node_id1, node_id2, node_id3, node_id4, \
-		ne1, ne2, ne3, ne4, j, k, l, m, \
+		ne1, ne2, ne3, ne4, j, k, l, \
 		x, y, dN_dx, dN_dy, N, J, detJ, \
-		mass, stiff, damping, connect_check, size_of_column_nonzero,\
+		connect_check, size_of_column_nonzero,\
 		elem_id, strain_disp_matrix, stress_strain_matrix, stiff_matrix, disp_elem, strain_elem, stress_elem, temp, sens)
 #endif 
 		for(i=0;i<(int)str.colored_elem_id[color].size();i++){
@@ -155,44 +205,18 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 					f_element_func[elem_id][j] += N[k*4+j] * std::abs(J[k]);
 				}
 			}
+			stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // K matrix
+			// calc D matrix (plane stress)
+			calcDMatrix2DPlaneStress(stress_strain_matrix, str);
+			// calc B matrix
 			for(j=0;j<4;j++){ // quadrature point
-				strain_disp_matrix[0][0] = dN_dx[j*4+0];
-				strain_disp_matrix[0][2] = dN_dx[j*4+1];
-				strain_disp_matrix[0][4] = dN_dx[j*4+2];
-				strain_disp_matrix[0][6] = dN_dx[j*4+3];
-				
-				strain_disp_matrix[1][1] = dN_dy[j*4+0];
-				strain_disp_matrix[1][3] = dN_dy[j*4+1];
-				strain_disp_matrix[1][5] = dN_dy[j*4+2];
-				strain_disp_matrix[1][7] = dN_dy[j*4+3];
-
-				strain_disp_matrix[2][0] = dN_dy[j*4+0];
-				strain_disp_matrix[2][1] = dN_dx[j*4+0];
-				strain_disp_matrix[2][2] = dN_dy[j*4+1];
-				strain_disp_matrix[2][3] = dN_dx[j*4+1];
-				strain_disp_matrix[2][4] = dN_dy[j*4+2];
-				strain_disp_matrix[2][5] = dN_dx[j*4+2];
-				strain_disp_matrix[2][6] = dN_dy[j*4+3];
-				strain_disp_matrix[2][7] = dN_dx[j*4+3];
-
-				// plane stress
-				stress_strain_matrix = {
-					{1, str.poisson_ratio, 0},
-					{str.poisson_ratio, 1, 0},
-					{0, 0, (1-str.poisson_ratio)/2}};
-				for(k=0;k<3;k++){
-					for(l=0;l<3;l++){
-						stress_strain_matrix[k][l] *= 1 / (1 - str.poisson_ratio * str.poisson_ratio);
-					}
-				}
+				calcBMatrix2D(strain_disp_matrix, dN_dx, dN_dy, j);
 				// calculate element stiffness matrix
-				calcStiffnessMatrix(stiff_matrix, strain_disp_matrix, stress_strain_matrix);
-				calcStiffnessMatrix(stiff_top_matrix, strain_disp_matrix, stress_strain_matrix);
+				calcStiffnessMatrix(stiff_matrix_temp, strain_disp_matrix, stress_strain_matrix);
 				for(k=0;k<stiff_matrix.size();k++){
 					for(l=0;l<stiff_matrix[k].size();l++){
-						stiff_matrix[k][l] *= str.thickness * J[j];
-						stiff_top_matrix[k][l] *= str.thickness * J[j];
-						stiff_matrix[k][l] *= str.youngs_modulus_nodes[node_id[j]];
+						stiff_matrix[k][l] += stiff_matrix_temp[k][l] * str.thickness * J[j] * str.youngs_modulus_nodes[node_id[j]];
+						stiff_top_matrix[k][l] = stiff_matrix_temp[k][l] * str.thickness * J[j];
 					}
 				}
 				// calc strain and stress
@@ -204,31 +228,46 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 				str.stress_x[elem_id] += stress_elem[0] * J[j];
 				str.stress_y[elem_id] += stress_elem[1] * J[j];
 				str.sheer_stress_xy[elem_id] += stress_elem[2] * J[j];
+				// calc stiff_geo matrix
+				calcDiffMatrix2D(diff_matrix, dN_dx, dN_dy, j);
+				calcStressMatrix2D(stress_matrix, str.stress_x[elem_id], str.stress_y[elem_id], str.sheer_stress_xy[elem_id]);
+				calcStiffGeoMatrix2D(stiff_geo_matrix_temp, diff_matrix, stress_matrix);
+				for(k=0;k<stiff_geo_matrix.size();k++){
+					for(l=0;l<stiff_geo_matrix.size();l++){
+						stiff_geo_matrix[k][l] += stiff_geo_matrix_temp[k][l] * str.thickness * J[j];
+					}
+				}
 				// calc topology optimization sensitivity
 				multi_mat_vec(temp, stiff_top_matrix, disp_elem);
 				sens = multi_vec_vec(disp_elem, temp);
 				for(k=0;k<4;k++){
 					str.sensitivity[node_id[k]] = sens;
 				}
-				// set element matrix to adjacency matrix format
+			}
+			// set element matrix to adjacency matrix format
+			for(j=0;j<4;j++){
+				connect_check = 0;
+				size_of_column_nonzero = adj_mat.idx[node_id[j]].size();
 				for(k=0;k<4;k++){
-					connect_check = 0;
-					size_of_column_nonzero = adj_mat.idx[node_id[k]].size();
-					for(l=0;l<4;l++){
-						for(m=0;m<size_of_column_nonzero;m++){
-							if(adj_mat.idx[node_id[k]][m] == node_id[l]){
-								connect_check++;
-								adj_mat.stiff[node_id[k]*2][m*2]     += stiff_matrix[k*2][l*2];
-								adj_mat.stiff[node_id[k]*2][m*2+1]   += stiff_matrix[k*2][l*2+1];
-								adj_mat.stiff[node_id[k]*2+1][m*2]   += stiff_matrix[k*2+1][l*2];
-								adj_mat.stiff[node_id[k]*2+1][m*2+1] += stiff_matrix[k*2+1][l*2+1];
-							}
+					for(l=0;l<size_of_column_nonzero;l++){
+						if(adj_mat.idx[node_id[j]][l] == node_id[k]){
+							connect_check++;
+							// linear stiffness matrix
+							adj_mat.stiff[node_id[j]*2][l*2]     += stiff_matrix[j*2][k*2];
+							adj_mat.stiff[node_id[j]*2][l*2+1]   += stiff_matrix[j*2][k*2+1];
+							adj_mat.stiff[node_id[j]*2+1][l*2]   += stiff_matrix[j*2+1][k*2];
+							adj_mat.stiff[node_id[j]*2+1][l*2+1] += stiff_matrix[j*2+1][k*2+1];
+							// geometry stiffness matrix
+							adj_mat.stiff_geo[node_id[j]*2][l*2]     += stiff_geo_matrix[j*2][k*2];
+							adj_mat.stiff_geo[node_id[j]*2][l*2+1]   += stiff_geo_matrix[j*2][k*2+1];
+							adj_mat.stiff_geo[node_id[j]*2+1][l*2]   += stiff_geo_matrix[j*2+1][k*2];
+							adj_mat.stiff_geo[node_id[j]*2+1][l*2+1] += stiff_geo_matrix[j*2+1][k*2+1];
 						}
 					}
-					if(connect_check != 4){
-						std::cerr<<"connectivity error: "<<connect_check<<std::endl;
-						exit(1);
-					}
+				}
+				if(connect_check != 4){
+					std::cerr<<"connectivity error: "<<connect_check<<std::endl;
+					exit(1);
 				}
 			}
 		}
