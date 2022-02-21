@@ -13,7 +13,7 @@
 #include "eigen_solver.h"
 #include "output.h"
 #include "init.h"
-//#include "debug.h"
+#include "debug.h"
 #include "fem_matrix.h"
 
 void readTopOptDataFile(TopOpt& top, Sim& sim){
@@ -49,6 +49,9 @@ void readTopOptDataFile(TopOpt& top, Sim& sim){
 
         }else if(list[0] == "ITR_MAX"){
             top.itr_max = std::stoi(list[2]);
+
+        }else if(list[0] == "FILTER_RADIUS"){
+            top.filter_radius = std::stod(list[2]);
 
         }else{
             // std::cout<<list[0]<<std::endl;
@@ -90,6 +93,44 @@ void calcVolume(TopOpt& top, Str& str){
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
+}
+
+void setNeighbours(TopOpt& top, Str& str){
+    top.neighbours = std::vector< std::vector<int> >(str.num_nodes,std::vector<int>());
+    int i,j;
+    double dx, dy, dz, dist;
+    for(i=0;i<top.sens.size();i++){
+        for(j=0;j<top.sens.size();j++){
+            dx = str.x[i] - str.x[j];
+            dy = str.y[i] - str.y[j];
+            dz = str.z[i] - str.z[j];
+            dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+            if(dist<top.filter_radius){
+                top.neighbours[i].push_back(j);
+            }
+        }
+   }
+}
+
+void filterSensitivity(TopOpt& top, Str& str){
+    int i, j, nid;
+    double dx, dy, dz, dist, dist_rho_sum, sum;
+    std::vector<double> temp = std::vector<double>(top.sens.size(),0);
+    for(i=0;i<(int)(top.sens.size());i++){
+        sum = dist_rho_sum = 0;
+        for(j=0;j<(int)(top.neighbours[i].size());j++){
+            nid = top.neighbours[i][j];
+            dx = str.x[i] - str.x[nid];
+            dy = str.y[i] - str.y[nid];
+            dz = str.z[i] - str.z[nid];
+            dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+            if(dist<top.filter_radius){
+                temp[i] += (top.filter_radius - dist) * top.rho[nid] * top.sens[nid];
+                dist_rho_sum += (top.filter_radius - dist) * top.rho[nid];
+            }
+        }
+        top.sens[i] = temp[i]/dist_rho_sum;
+   }
 }
 
 void optOCmethod(TopOpt& top){
@@ -144,6 +185,7 @@ void exeTopOpt(TopOpt& top, Sim& sim, Str& str, AdjMatrix& adj_mat){
     initTopOpt(top, str);
     outputDensityVtkFile(0, top, sim, str);
     outputTopOptDataFile(top, sim);
+    setNeighbours(top, str);
     
     for(i=0;i<top.itr_max;i++){
         updateYoungsModulus(top, str);
@@ -157,6 +199,7 @@ void exeTopOpt(TopOpt& top, Sim& sim, Str& str, AdjMatrix& adj_mat){
         top.comp_prev = top.comp;
         calcElementMatrix2Dquad(sim, str, adj_mat);
         calcSensitivity(top, str);
+        filterSensitivity(top, str);
         optOCmethod(top);
         outputDensityVtkFile(i+1, top, sim, str);
         std::cout.setf(std::ios::left, std::ios::adjustfield);
