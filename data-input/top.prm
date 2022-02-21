@@ -12,3 +12,5 @@ POW = 3
 #
 ITR_MAX = 50
 #
+FILTER_RADIUS = 20
+#

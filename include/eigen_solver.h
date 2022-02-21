@@ -5,6 +5,7 @@
 #include <Eigen/Sparse>
 #include <Eigen/SparseLU>
 #include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Eigenvalues>
 #include <vector>
 
 #include "parameter.h"

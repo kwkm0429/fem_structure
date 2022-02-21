@@ -41,11 +41,11 @@ void outputDispVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
-	ofs<<"VECTORS velocity float"<<std::endl;
+	ofs<<"VECTORS Displacement float"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<str.disp_x[i]<<" "<<str.disp_y[i]<<" "<<str.disp_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS point_scalars float"<<std::endl;
+	ofs<<"SCALARS Displacement float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<std::sqrt(str.disp_x[i]*str.disp_x[i]+str.disp_y[i]*str.disp_y[i]+str.disp_z[i]*str.disp_z[i])<<std::endl;
@@ -86,11 +86,11 @@ void outputStrainVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"CELL_DATA "<<str.num_elements<<std::endl;
-	ofs<<"VECTORS strain float"<<std::endl;
+	ofs<<"VECTORS Strain float"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<str.strain_x[i]<<" "<<str.strain_y[i]<<" "<<str.strain_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS point_scalars float"<<std::endl;
+	ofs<<"SCALARS Strain float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<std::sqrt(str.strain_x[i]*str.strain_x[i]+str.strain_y[i]*str.strain_y[i]+str.strain_z[i]*str.strain_z[i])<<std::endl;
@@ -131,11 +131,11 @@ void outputStressVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"CELL_DATA "<<str.num_elements<<std::endl;
-	ofs<<"VECTORS stress float"<<std::endl;
+	ofs<<"VECTORS Stress float"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<str.stress_x[i]<<" "<<str.stress_y[i]<<" "<<str.stress_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS point_scalars float"<<std::endl;
+	ofs<<"SCALARS Stress float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<std::sqrt(str.stress_x[i]*str.stress_x[i]+str.stress_y[i]*str.stress_y[i]+str.stress_z[i]*str.stress_z[i])<<std::endl;
@@ -159,7 +159,7 @@ void outputBucklingVtkFile(int number, Sim& sim, Str& str){
 	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
 	ofs<<"POINTS "<<str.num_nodes<<" float"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
-		ofs<<str.x[i]<<" "<<str.y[i]<<" "<<str.z[i]<<std::endl;
+		ofs<<str.x[i]+str.buckling_x[i]<<" "<<str.y[i]+str.buckling_y[i]<<" "<<str.z[i]+str.buckling_z[i]<<std::endl;
 	}
 	ofs<<"CELLS "<<str.num_elements<<" "<<5*str.num_elements<<std::endl;
 	for(i=0;i<str.num_elements;i++){
@@ -176,11 +176,11 @@ void outputBucklingVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
-	ofs<<"VECTORS velocity float"<<std::endl;
+	ofs<<"VECTORS Buckling float"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<str.buckling_x[i]<<" "<<str.buckling_y[i]<<" "<<str.buckling_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS point_scalars float"<<std::endl;
+	ofs<<"SCALARS Buckling float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<std::sqrt(str.buckling_x[i]*str.buckling_x[i]+str.buckling_y[i]*str.buckling_y[i]+str.buckling_z[i]*str.buckling_z[i])<<std::endl;
@@ -222,7 +222,7 @@ void outputDensityVtkFile(int number, TopOpt& top, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
-	ofs<<"SCALARS point_scalars float"<<std::endl;
+	ofs<<"SCALARS Density float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<top.rho[i]<<std::endl;
@@ -266,6 +266,7 @@ void outputTopOptDataFile(TopOpt& top, Sim& sim){
 	ofs<<"Emin = "<<top.Emin<<std::endl;
 	ofs<<"POW = "<<top.pow<<std::endl;
 	ofs<<"ITR_MAX = "<<top.itr_max<<std::endl;
+	ofs<<"FILTER_RADIUS = "<<top.filter_radius<<std::endl;
 	char* num_threads = getenv("OMP_NUM_THREADS");
 	if(num_threads!=NULL){
 		ofs<<"OMP_NUM_THREADS = "<<num_threads<<std::endl;

@@ -244,6 +244,8 @@ void solveBuckling2D(Sim& sim, Str& str){
 	Vector v = Vector::Zero(str.num_nodes*2);
 
 	// solve (KL+\lambda KG)\phi = 0
+	//std::cout<<"check geometric stiffness matrix"<<std::endl;
+	//std::cout<<s_mat.stiff_geo<<std::endl;
 	is_solved = EigenValueSolver(s_mat.stiff, s_mat.stiff_geo, v, str.buckling_coeff);
 	for(i=0;i<str.num_nodes;i++){
 		str.buckling_x[i] = v[i*2];
@@ -259,27 +261,26 @@ void solveBuckling2D(Sim& sim, Str& str){
 }
 
 bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, double& lambda){
-	int i, size;
-
+	int i, id, size;
 	Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es(A,B);
 	//std::cout << "The eigenvalues of the pencil (A,B) are:" << std::endl << es.eigenvalues() << std::endl;
 	//std::cout << "The matrix of eigenvectors, V, is:" << std::endl << es.eigenvectors() << std::endl << std::endl;
 	
 	size = es.eigenvalues().size();
 	for(i=0;i<size;i++){
-		if(es.eigenvalues()[i]>0){
+		if(es.eigenvalues()[i]>1e-6){
 			lambda=es.eigenvalues()[i];
+			id = i;
 			break;
 		}
 	}
-	//lambda = es.eigenvalues()[0];
 	std::cout << "Consider the first eigenvalue, lambda = " << lambda << std::endl;
-	v = es.eigenvectors().col(i);
+	v = es.eigenvectors().col(id);
 	//std::cout << "If v is the corresponding eigenvector, then A * v = " << std::endl << A * v << std::endl;
 	//std::cout << "... and lambda * B * v = " << std::endl << lambda * B * v << std::endl << std::endl;
 	if(es.info()!=Eigen::Success) {
 		// solving failed
-		std::cout<<"Failed solver BiCGSTAB"<<std::endl;
+		std::cout<<"Failed "<<__func__<<std::endl;
 		return false;
 	}
 #ifdef DEBUG

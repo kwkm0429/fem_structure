@@ -90,7 +90,7 @@ void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 
 void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	exeStaticAnalysis(sim, str, adj_mat);
-	exePostProcess(sim, str, adj_mat);
+	//exePostProcess(sim, str, adj_mat);
 	if(sim.dim == 2){
 		calcElementMatrix2Dquad(sim, str, adj_mat);
 	}else if(sim.dim == 3){
@@ -107,6 +107,10 @@ void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	solveBuckling2D(sim, str);
 	// output
 	outputBucklingVtkFile(1, sim, str);
+	outputStrainVtkFile(1, sim, str);
+	outputStressVtkFile(1, sim, str);
+	updatePosition(str);
+	outputDispVtkFile(1,sim, str);
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
