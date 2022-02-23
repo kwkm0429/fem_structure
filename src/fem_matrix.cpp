@@ -129,6 +129,78 @@ void calcStiffGeoMatrix2D(std::vector<std::vector<double>>& Kg, std::vector<std:
 	multi_mat_mat(Kg, temp, Diff);
 }
 
+void calcStressStrain(Sim& sim, Str& str, AdjMatrix& adj_mat){
+#ifdef MEASURE
+	double time_start = elapsedTime();
+#endif
+	int i = 0, j = 0;
+	std::vector<int> node_id = std::vector<int>(4,0);
+	std::vector<double> x     = std::vector<double>(4,0);
+	std::vector<double> y     = std::vector<double>(4,0);
+	std::vector<double> dN_dx = std::vector<double>(16,0);
+	std::vector<double> dN_dy = std::vector<double>(16,0);
+	std::vector<double> N     = std::vector<double>(16,0);
+	std::vector<double> J     = std::vector<double>(4,0);
+	std::vector<double> disp_elem   = std::vector<double>(8,0);
+	std::vector<double> strain_elem = std::vector<double>(3,0);
+	std::vector<double> stress_elem = std::vector<double>(3,0);
+	std::vector<std::vector<double>> strain_disp_matrix = std::vector< std::vector<double> >(3,std::vector<double>(8,0)); // B matrix
+	std::vector<std::vector<double>> stress_strain_matrix = std::vector< std::vector<double> >(3,std::vector<double>(3,0));	// D matrix
+	// coloring
+	int elem_id = 0, color = 0;
+
+    // calculate element stiffness matrix
+	for(color=0;color<(int)str.colored_elem_id.size();color++){
+#ifdef _OPENMP
+		#pragma omp parallel
+		{
+		#pragma omp for firstprivate(node_id, j, x, y, dN_dx, dN_dy, N, J, \
+		elem_id, strain_disp_matrix, stress_strain_matrix, disp_elem, strain_elem, stress_elem)
+#endif 
+		for(i=0;i<(int)str.colored_elem_id[color].size();i++){
+			elem_id = str.colored_elem_id[color][i];
+			// calculate stabilization parameter in element i
+			for(j=0;j<4;j++){
+				node_id[j] = str.element_node_table[elem_id][j];
+				x[j] = str.x[node_id[j]];
+				y[j] = str.y[node_id[j]];
+				disp_elem[j*2]   = str.disp_x[node_id[j]];
+				disp_elem[j*2+1] = str.disp_y[node_id[j]];
+			}
+			for(j=0;j<4;j++){
+				calcJacobian(j,J,x,y,N,dN_dx,dN_dy); // calculate jaccobian and basis function
+			}
+			// calc D matrix (plane stress)
+			calcDMatrix2DPlaneStress(stress_strain_matrix, str);
+			// calc B matrix
+			for(j=0;j<4;j++){ // quadrature point
+				calcBMatrix2D(strain_disp_matrix, dN_dx, dN_dy, j);
+				// calc strain and stress
+				multi_mat_vec(strain_elem, strain_disp_matrix, disp_elem);
+				multi_mat_vec(stress_elem, stress_strain_matrix, strain_elem);
+				str.strain_x[elem_id] += strain_elem[0] * J[j] * str.youngs_modulus_nodes[node_id[j]];
+				str.strain_y[elem_id] += strain_elem[1] * J[j] * str.youngs_modulus_nodes[node_id[j]];
+				str.sheer_strain_xy[elem_id] += strain_elem[2] * J[j] * str.youngs_modulus_nodes[node_id[j]];
+				str.stress_x[elem_id] += stress_elem[0] * J[j] * str.youngs_modulus_nodes[node_id[j]];
+				str.stress_y[elem_id] += stress_elem[1] * J[j] * str.youngs_modulus_nodes[node_id[j]];
+				str.sheer_stress_xy[elem_id] += stress_elem[2] * J[j] * str.youngs_modulus_nodes[node_id[j]];
+			}
+		}
+#ifdef _OPENMP
+		}
+#endif
+	}
+#ifdef MEASURE
+	double time_end = elapsedTime();
+	std::ofstream ofs(sim.time_output_filename, std::ios::app);
+	ofs<<__func__<<" "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
+	ofs.close();
+#endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}
+
 void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #ifdef MEASURE
 	double time_start = elapsedTime();
@@ -219,15 +291,6 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 						stiff_top_matrix[k][l] = stiff_matrix_temp[k][l] * str.thickness * J[j];
 					}
 				}
-				// calc strain and stress
-				multi_mat_vec(strain_elem, strain_disp_matrix, disp_elem);
-				multi_mat_vec(stress_elem, stress_strain_matrix, strain_elem);
-				str.strain_x[elem_id] += strain_elem[0] * J[j];
-				str.strain_y[elem_id] += strain_elem[1] * J[j];
-				str.sheer_strain_xy[elem_id] += strain_elem[2] * J[j];
-				str.stress_x[elem_id] += stress_elem[0] * J[j];
-				str.stress_y[elem_id] += stress_elem[1] * J[j];
-				str.sheer_stress_xy[elem_id] += stress_elem[2] * J[j];
 				// calc stiff_geo matrix
 				calcDiffMatrix2D(diff_matrix, dN_dx, dN_dy, j);
 				calcStressMatrix2D(stress_matrix, str.stress_x[elem_id], str.stress_y[elem_id], str.sheer_stress_xy[elem_id]);

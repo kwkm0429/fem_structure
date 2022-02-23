@@ -32,15 +32,8 @@ void readInputFiles(Sim& sim, Str& str){
 }
 
 void exePostProcess(Sim& sim, Str& str, AdjMatrix& adj_mat){
-	 // calculate strain and stress
-	if(sim.dim == 2){
-		calcElementMatrix2Dquad(sim, str, adj_mat);
-	}else if(sim.dim == 3){
-		calcElementMatrix3Dtetra(sim, str, adj_mat);
-	}else{
-		std::cout<<"Dimension Error: "<<sim.dim<<std::endl;
-		exit(1);
-	}
+	// calculate strain and stress
+	calcStressStrain(sim, str, adj_mat);
 	outputStrainVtkFile(1, sim, str);
 	outputStressVtkFile(1, sim, str);
 	updatePosition(str);
@@ -90,7 +83,8 @@ void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 
 void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	exeStaticAnalysis(sim, str, adj_mat);
-	//exePostProcess(sim, str, adj_mat);
+	calcStressStrain(sim, str, adj_mat);
+	// set stress stiffness matrix
 	if(sim.dim == 2){
 		calcElementMatrix2Dquad(sim, str, adj_mat);
 	}else if(sim.dim == 3){
