@@ -1,0 +1,16 @@
+# Topology Optimization Parameters
+#
+VOL_MAX = 0.5
+#
+RHO_INIT = 0.5
+#
+E0 = 200000
+#
+Emin = 200
+#
+POW = 3
+#
+ITR_MAX = 100
+#
+FILTER_RADIUS = 6
+#
