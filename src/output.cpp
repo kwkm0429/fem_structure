@@ -41,11 +41,11 @@ void outputDispVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
-	ofs<<"VECTORS Displacement float"<<std::endl;
+	ofs<<"VECTORS Displacement_Vector float"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<str.disp_x[i]<<" "<<str.disp_y[i]<<" "<<str.disp_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS Displacement float"<<std::endl;
+	ofs<<"SCALARS Displacement_Scalar float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<std::sqrt(str.disp_x[i]*str.disp_x[i]+str.disp_y[i]*str.disp_y[i]+str.disp_z[i]*str.disp_z[i])<<std::endl;
@@ -86,11 +86,11 @@ void outputStrainVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"CELL_DATA "<<str.num_elements<<std::endl;
-	ofs<<"VECTORS Strain float"<<std::endl;
+	ofs<<"VECTORS Strain_Vector float"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<str.strain_x[i]<<" "<<str.strain_y[i]<<" "<<str.strain_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS Strain float"<<std::endl;
+	ofs<<"SCALARS Strain_Scalar float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<std::sqrt(str.strain_x[i]*str.strain_x[i]+str.strain_y[i]*str.strain_y[i]+str.strain_z[i]*str.strain_z[i])<<std::endl;
@@ -131,11 +131,11 @@ void outputStressVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"CELL_DATA "<<str.num_elements<<std::endl;
-	ofs<<"VECTORS Stress float"<<std::endl;
+	ofs<<"VECTORS Stress_Vector float"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<str.stress_x[i]<<" "<<str.stress_y[i]<<" "<<str.stress_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS Stress float"<<std::endl;
+	ofs<<"SCALARS Stress_Scalar float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_elements;i++){
 		ofs<<std::sqrt(str.stress_x[i]*str.stress_x[i]+str.stress_y[i]*str.stress_y[i]+str.stress_z[i]*str.stress_z[i])<<std::endl;
@@ -176,11 +176,11 @@ void outputBucklingVtkFile(int number, Sim& sim, Str& str){
 		else if(sim.dim == 3)ofs<<10<<std::endl;
 	}
 	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
-	ofs<<"VECTORS Buckling float"<<std::endl;
+	ofs<<"VECTORS Buckling_Vector float"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<str.buckling_x[i]<<" "<<str.buckling_y[i]<<" "<<str.buckling_z[i]<<std::endl;
 	}
-	ofs<<"SCALARS Buckling float"<<std::endl;
+	ofs<<"SCALARS Buckling_Scalar float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
 		ofs<<std::sqrt(str.buckling_x[i]*str.buckling_x[i]+str.buckling_y[i]*str.buckling_y[i]+str.buckling_z[i]*str.buckling_z[i])<<std::endl;
