@@ -106,17 +106,17 @@ void calcDiffMatrix2D(std::vector<std::vector<double>>& Diff, std::vector<double
 	int i;
 	for(i=0;i<4;i++){
 		Diff[0][i*2]   = dN_dx[j*4+i];
-		Diff[1][i*2+1] = dN_dx[j*4+i];
-		Diff[2][i*2]   = dN_dy[j*4+i];
+		Diff[1][i*2]   = dN_dy[j*4+i];
+		Diff[2][i*2+1] = dN_dx[j*4+i];
 		Diff[3][i*2+1] = dN_dy[j*4+i];
 	}
 }
 
 void calcStressMatrix2D(std::vector<std::vector<double>>& S, double sigma_x, double sigma_y, double sigma_xy){
-	S[0][0] = sigma_x; S[0][1] = 0;       S[0][2] = sigma_xy;S[0][3] = 0;
-	S[1][0] = 0;       S[1][1] = sigma_x; S[1][2] = 0;       S[1][3] = sigma_xy;
-	S[2][0] = sigma_xy;S[2][1] = 0;       S[2][2] = sigma_y; S[2][3] = 0;
-	S[3][0] = 0;       S[3][1] = sigma_xy;S[3][2] = 0;       S[3][3] = sigma_y;
+	S[0][0] = sigma_x; S[0][1] = sigma_xy;S[0][2] = 0;       S[0][3] = 0;
+	S[1][0] = sigma_xy;S[1][1] = sigma_y; S[1][2] = 0;       S[1][3] = 0;
+	S[2][0] = 0;       S[2][1] = 0;       S[2][2] = sigma_x; S[2][3] = sigma_xy;
+	S[3][0] = 0;       S[3][1] = 0;       S[3][2] = sigma_xy;S[3][3] = sigma_y;
 }
 
 void calcStiffGeoMatrix2D(std::vector<std::vector<double>>& Kg, std::vector<std::vector<double>>& Diff, std::vector<std::vector<double>>& S){
@@ -205,9 +205,7 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #ifdef MEASURE
 	double time_start = elapsedTime();
 #endif
-	int node_id1 = 0, node_id2 = 0, node_id3 = 0, node_id4 = 0;
-	int i = 0, j = 0, k = 0, l = 0, ne1 = 0, ne2 = 0, ne3 = 0, ne4 = 0;
-	double detJ = 0;
+	int i = 0, j = 0, k = 0, l = 0;
 	std::vector<int> node_id = std::vector<int>(4,0);
 	std::vector<double> x     = std::vector<double>(4,0);
 	std::vector<double> y     = std::vector<double>(4,0);
@@ -249,8 +247,7 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #ifdef _OPENMP
 		#pragma omp parallel
 		{
-		#pragma omp for firstprivate(node_id, node_id1, node_id2, node_id3, node_id4, \
-		ne1, ne2, ne3, ne4, j, k, l, \
+		#pragma omp for firstprivate(node_id, j, k, l, \
 		x, y, dN_dx, dN_dy, N, J, detJ, \
 		connect_check, size_of_column_nonzero,\
 		elem_id, strain_disp_matrix, stress_strain_matrix, stiff_matrix, disp_elem, strain_elem, stress_elem, temp, sens)
@@ -265,10 +262,8 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 				disp_elem[j*2]   = str.disp_x[node_id[j]];
 				disp_elem[j*2+1] = str.disp_y[node_id[j]];
 			}
-			detJ=0;
 			for(j=0;j<4;j++){
 				calcJacobian(j,J,x,y,N,dN_dx,dN_dy); // calculate jaccobian and basis function
-				detJ += std::abs(J[j]);
 			}
 			for(j=0;j<4;j++){ // nodes in the element
 				f_element_func[elem_id][j] = 0;
@@ -278,6 +273,7 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 				}
 			}
 			stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // K matrix
+			stiff_geo_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // Kg matrix
 			// calc D matrix (plane stress)
 			calcDMatrix2DPlaneStress(stress_strain_matrix, str);
 			// calc B matrix
