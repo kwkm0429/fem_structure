@@ -6,12 +6,12 @@
 
 ### 解析種類
 - 線形静解析
-- 線形座屈解析
+- 線形座屈解析(予定)
 - トポロジー最適化(密度法)
 
 ### 要素形状
 - 2次元：1次四辺形要素
-- 3次元：1次四面体要素、2次四面体要素（予定）
+- 3次元：1次四面体要素(予定)、2次四面体要素(予定)
 
 ### 入力ファイル
 - 節点ファイル: data-input/node.dat
@@ -19,6 +19,10 @@
 - 境界条件ファイル: data-input/bc.dat
 - 解析設定ファイル: data-input/sim.prm
 - トポロジー最適化設定ファイル：data-input/top.prm
+
+### 準備
+- Eigenを以下のリンクからダウンロードし、フォルダEigenをinclude直下にコピーする
+- https://eigen.tuxfamily.org/index.php?title=Main_Page
 
 ### コンパイル
 ```

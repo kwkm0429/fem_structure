@@ -159,7 +159,7 @@ void outputBucklingVtkFile(int number, Sim& sim, Str& str){
 	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
 	ofs<<"POINTS "<<str.num_nodes<<" float"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
-		ofs<<str.x[i]+str.buckling_x[i]<<" "<<str.y[i]+str.buckling_y[i]<<" "<<str.z[i]+str.buckling_z[i]<<std::endl;
+		ofs<<str.x[i]+str.buckling_x[number][j]<<" "<<str.y[i]+str.buckling_y[number][i]<<" "<<str.z[i]+str.buckling_z[number][i]<<std::endl;
 	}
 	ofs<<"CELLS "<<str.num_elements<<" "<<5*str.num_elements<<std::endl;
 	for(i=0;i<str.num_elements;i++){
@@ -178,12 +178,12 @@ void outputBucklingVtkFile(int number, Sim& sim, Str& str){
 	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
 	ofs<<"VECTORS Buckling_Vector float"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
-		ofs<<str.buckling_x[i]<<" "<<str.buckling_y[i]<<" "<<str.buckling_z[i]<<std::endl;
+		ofs<<str.buckling_x[number][i]<<" "<<str.buckling_y[number][i]<<" "<<str.buckling_z[number][i]<<std::endl;
 	}
 	ofs<<"SCALARS Buckling_Scalar float"<<std::endl;
 	ofs<<"LOOKUP_TABLE default"<<std::endl;
 	for(i=0;i<str.num_nodes;i++){
-		ofs<<std::sqrt(str.buckling_x[i]*str.buckling_x[i]+str.buckling_y[i]*str.buckling_y[i]+str.buckling_z[i]*str.buckling_z[i])<<std::endl;
+		ofs<<std::sqrt(str.buckling_x[number][i]*str.buckling_x[number][i]+str.buckling_y[number][i]*str.buckling_y[number][i]+str.buckling_z[number][i]*str.buckling_z[number][i])<<std::endl;
 	}
 	ofs.close();
 #ifdef DEBUG

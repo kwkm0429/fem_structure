@@ -3,11 +3,17 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
+#include <Eigen/Core>
+#include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Eigenvalues>
 #include <vector>
-
+/*
+#include <Spectra/SymGEigsShiftSolver.h>
+#include <Spectra/MatOp/SymShiftInvert.h>
+#include <Spectra/MatOp/SparseSymMatProd.h>
+//*/
 #include "parameter.h"
 #include "topopt.h"
 
@@ -43,7 +49,8 @@ bool eigenLU(SpMat& A, Vector& x, Vector& b);
 bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b);
 // buckling solver
 void solveBuckling2D(Sim& sim, Str& str);
-bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, double& lambda);
+bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, Sim& sim, Str& str);
+bool SpectraSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, Sim& sim);
 // topology optimization
 void calcCompliance(double& compliance);
 void calcSensitivity(TopOpt& top, Str& str);

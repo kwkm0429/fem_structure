@@ -25,6 +25,7 @@ struct Sim{
 	int num_nonzero;
 	int dim;
 	int id;
+	int num_mode;
 };
 
 struct Str{
@@ -57,8 +58,8 @@ struct Str{
 	std::vector<double> youngs_modulus_nodes;
 	std::vector<double> sensitivity;
 	// buckling
-	double buckling_coeff;
-	std::vector<double> buckling_x, buckling_y, buckling_z;
+	std::vector<double> buckling_coeff;
+	std::vector<std::vector<double>> buckling_x, buckling_y, buckling_z;
 };
 
 struct AdjMatrix{

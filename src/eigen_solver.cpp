@@ -54,8 +54,8 @@ void setSparseMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat){
 			nodeIdx = adj_mat.idx[(int)(i/2)][j];
 			s_mat.stiff.insert(i, nodeIdx*2) = adj_mat.stiff[i][j*2];
 			s_mat.stiff.insert(i, nodeIdx*2+1) = adj_mat.stiff[i][j*2+1];
-			s_mat.stiff_geo.insert(i, nodeIdx*2) = adj_mat.stiff_geo[i][j*2];
-			s_mat.stiff_geo.insert(i, nodeIdx*2+1) = adj_mat.stiff_geo[i][j*2+1];
+			s_mat.stiff_geo.insert(i, nodeIdx*2) = -adj_mat.stiff_geo[i][j*2];
+			s_mat.stiff_geo.insert(i, nodeIdx*2+1) = -adj_mat.stiff_geo[i][j*2+1];
 		}
 	}
 #ifdef MEASURE
@@ -243,14 +243,15 @@ void solveBuckling2D(Sim& sim, Str& str){
 	bool is_solved = true;
 	Vector v = Vector::Zero(str.num_nodes*2);
 
-	// solve (KL+\lambda KG)\phi = 0
+	// solve (KL+\lambda Kg)\phi = 0 -> (Kg+1/\lambda KL)\phi = 0 -> -Kg v = 1/lambda KL v
 	//std::cout<<"check geometric stiffness matrix"<<std::endl;
+	//std::cout<<s_mat.stiff<<std::endl;
 	//std::cout<<s_mat.stiff_geo<<std::endl;
-	is_solved = EigenValueSolver(s_mat.stiff, s_mat.stiff_geo, v, str.buckling_coeff);
-	for(i=0;i<str.num_nodes;i++){
-		str.buckling_x[i] = v[i*2];
-		str.buckling_y[i] = v[i*2+1];
-	}
+	setBoundaryCondition2D(s_mat.stiff_geo, v, sim ,str);
+	setBoundaryCondition2D(s_mat.stiff, v, sim ,str);
+	is_solved = EigenValueSolver(s_mat.stiff_geo, s_mat.stiff, v, str.buckling_coeff, sim, str);
+	//is_solved = SpectraSolver(s_mat.stiff_geo, s_mat.stiff, v, str.buckling_coeff, sim);
+
 	if(!is_solved){
 		std::cout<<"Failed "<<__func__<<std::endl;
 		exit(1);
@@ -260,24 +261,27 @@ void solveBuckling2D(Sim& sim, Str& str){
 #endif
 }
 
-bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, double& lambda){
-	int i, id, size;
-	Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es(A,B);
-	//std::cout << "The eigenvalues of the pencil (A,B) are:" << std::endl << es.eigenvalues() << std::endl;
+bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, Sim& sim, Str& str){
+	int i, j, id, size;
+	double norm=0;
+	// convert sparse to dense matrix because Eigen does not support sparse matrix for eigenvalue solver.
+	Matrix Ad = A;
+	Matrix Bd = B;
+	Eigen::GeneralizedSelfAdjointEigenSolver<Eigen::MatrixXd> es(Ad, Bd);
+	std::cout << "The eigenvalues of the pencil (A,B) are:" << std::endl << es.eigenvalues() << std::endl;
 	//std::cout << "The matrix of eigenvectors, V, is:" << std::endl << es.eigenvectors() << std::endl << std::endl;
 	
 	size = es.eigenvalues().size();
-	for(i=0;i<size;i++){
-		if(es.eigenvalues()[i]>1e-6){
-			lambda=es.eigenvalues()[i];
-			id = i;
-			break;
+	for(i=0;i<sim.num_mode;i++){
+		lambda[i] = 1.0/es.eigenvalues()[size-1-i];
+		v = es.eigenvectors().col(size-1-i);
+		norm=0;
+		for(j=0;j<str.num_nodes;j++){
+			str.buckling_x[i][j] = v[j*2];
+			str.buckling_y[i][j] = v[j*2+1];
 		}
+		std::cout << i<<") Eigen value, lambda = " << lambda[i] << std::endl;
 	}
-	std::cout << "Consider the first eigenvalue, lambda = " << lambda << std::endl;
-	v = es.eigenvectors().col(id);
-	//std::cout << "If v is the corresponding eigenvector, then A * v = " << std::endl << A * v << std::endl;
-	//std::cout << "... and lambda * B * v = " << std::endl << lambda * B * v << std::endl << std::endl;
 	if(es.info()!=Eigen::Success) {
 		// solving failed
 		std::cout<<"Failed "<<__func__<<std::endl;
@@ -288,6 +292,58 @@ bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, double& lambda){
 #endif
 	return true;
 }
+
+/*
+bool SpectraSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, Sim& sim){
+	int i;
+	// convert to Eigen::ColMajor because Spectra and Eigen has error for RowMajor
+	//*
+	Eigen::SparseMatrix<double, Eigen::ColMajor, int64_t> Ae, Be;
+	Ae.resize(A.outerSize(), A.outerSize());
+	Be.resize(B.outerSize(), B.outerSize());
+	Ae.reserve(sim.num_nonzero);
+	Be.reserve(sim.num_nonzero);
+	for(i=0;i<A.outerSize();++i){
+		for(SpMat::InnerIterator it(A, i); it; ++it){
+			Ae.insert(it.col(), i) = it.valueRef();
+		}
+	}
+	for(i=0;i<B.outerSize();++i){
+		for(SpMat::InnerIterator it(B, i); it; ++it){
+			Be.insert(it.col(), i) = it.valueRef();
+		}
+	}
+	std::cout<<"GATE1"<<std::endl;
+	using OpType = Spectra::SymShiftInvert<double, Eigen::Sparse, Eigen::Sparse, Eigen::Upper, Eigen::Upper, Eigen::RowMajor, Eigen::RowMajor, int64_t, int64_t>;
+	using BOpType = Spectra::SparseSymMatProd<double, Eigen::Upper, Eigen::RowMajor, int64_t>;
+	OpType op(A, B);
+	BOpType Bop(A);
+	std::cout<<"GATE2"<<std::endl;
+	// Construct generalized eigen solver object, seeking three generalized
+    // eigenvalues that are closest to and larger than 1.0. This is equivalent to
+    // specifying a shift sigma = 1.0 combined with the SortRule::LargestAlge
+    // selection rule
+	Spectra::SymGEigsShiftSolver<OpType, BOpType, Spectra::GEigsMode::Buckling> geigs(op, Bop, 5, 10, 1.0);
+	std::cout<<"GATE3"<<std::endl;
+	geigs.init();
+	int nconv = geigs.compute(Spectra::SortRule::LargestAlge);
+	std::cout<<"GATE4"<<std::endl;
+	if(Spectra::CompInfo::Successful != geigs.info()){
+		std::cerr << "Failed " << __func__ <<std::endl;
+		exit(-1);
+	}else{
+		Vector evalues = geigs.eigenvalues();
+		std::cout<<evalues<<std::endl;
+		Matrix evecs = geigs.eigenvectors();
+		v = evecs.col(0);
+		lambda[0] = 1.0/evalues(0,0);
+		std::cout << "Consider the first eigenvalue, lambda = " << lambda[0] << std::endl;
+		return true;
+	}
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}*/
 
 // Topology Optimization
 void calcCompliance(double& compliance){

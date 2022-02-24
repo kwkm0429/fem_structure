@@ -49,9 +49,10 @@ void readNodeDataFile(Sim& sim, Str& str){
             str.force_z               = std::vector<double>(str.num_nodes,0);
             str.youngs_modulus_nodes  = std::vector<double>(str.num_nodes,0);
             str.sensitivity           = std::vector<double>(str.num_nodes,0);
-            str.buckling_x            = std::vector<double>(str.num_nodes,0);
-            str.buckling_y            = std::vector<double>(str.num_nodes,0);
-            str.buckling_z            = std::vector<double>(str.num_nodes,0);
+            str.buckling_coeff        = std::vector<double>(str.num_nodes,0);
+            str.buckling_x            = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            str.buckling_y            = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            str.buckling_z            = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
         }
         else if(loop>=1 && loop<=str.num_nodes){
             /* coordinate of nodes */
@@ -229,6 +230,9 @@ void readParameterDataFile(Sim& sim, Str& str){
         
         }else if(list[0] == "ID"){
             sim.id = std::stoi(list[2]);
+        
+        }else if(list[0] == "NUM_MODE"){
+            sim.num_mode = std::stoi(list[2]);
         
         }else{
             // std::cout<<list[0]<<std::endl;

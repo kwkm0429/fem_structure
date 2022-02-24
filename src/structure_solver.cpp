@@ -82,6 +82,8 @@ void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 
 
 void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
+	int i;
+
 	exeStaticAnalysis(sim, str, adj_mat);
 	calcStressStrain(sim, str, adj_mat);
 	// set stress stiffness matrix
@@ -100,7 +102,9 @@ void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	// solve
 	solveBuckling2D(sim, str);
 	// output
-	outputBucklingVtkFile(1, sim, str);
+	for(i=0;i<sim.num_mode;i++){
+		outputBucklingVtkFile(i, sim, str);
+	}
 	outputStrainVtkFile(1, sim, str);
 	outputStressVtkFile(1, sim, str);
 	updatePosition(str);
