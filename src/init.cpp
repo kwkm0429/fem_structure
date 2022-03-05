@@ -49,10 +49,16 @@ void readNodeDataFile(Sim& sim, Str& str){
             str.force_z               = std::vector<double>(str.num_nodes,0);
             str.youngs_modulus_nodes  = std::vector<double>(str.num_nodes,0);
             str.sensitivity           = std::vector<double>(str.num_nodes,0);
-            str.buckling_coeff        = std::vector<double>(str.num_nodes,0);
-            str.buckling_x            = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
-            str.buckling_y            = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
-            str.buckling_z            = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            // buckling
+            str.buckling_coeff = std::vector<double>(str.num_nodes,0);
+            str.buckling_x     = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            str.buckling_y     = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            str.buckling_z     = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            // eigen mode
+            str.eigen_value  = std::vector<double>(str.num_nodes,0);
+            str.eigen_mode_x = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            str.eigen_mode_y = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
+            str.eigen_mode_z = std::vector< std::vector<double> >(sim.num_mode,std::vector<double>(str.num_nodes,0));
         }
         else if(loop>=1 && loop<=str.num_nodes){
             /* coordinate of nodes */
@@ -167,6 +173,10 @@ void readBoundaryDataFile(Sim& sim, Str& str){
                     str.is_boundary[node_id] = true;
                 }
             }
+            // calc num_spc
+            if(str.is_dirichlet_dx[node_id])sim.num_spc++;
+            if(str.is_dirichlet_dy[node_id])sim.num_spc++;
+            //if(str.is_dirichlet_dz[node_id])sim.num_spc++;
         }
         loop++;
     }
@@ -234,6 +244,9 @@ void readParameterDataFile(Sim& sim, Str& str){
         }else if(list[0] == "NUM_MODE"){
             sim.num_mode = std::stoi(list[2]);
         
+        }else if(list[0] == "MAGNIFY_RATIO"){
+            sim.magnify_ratio = std::stod(list[2]);
+        
         }else{
             // std::cout<<list[0]<<std::endl;
         }
@@ -271,6 +284,7 @@ void initAdjMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat){
     adj_mat.idx        = std::vector< std::vector<int> >(str.num_nodes);
     adj_mat.stiff      = std::vector< std::vector<double> >(str.num_nodes*sim.dim);
     adj_mat.stiff_geo  = std::vector< std::vector<double> >(str.num_nodes*sim.dim);
+    adj_mat.mass       = std::vector< std::vector<double> >(str.num_nodes*sim.dim);
 
     sim.num_nonzero = 0;
     for(i=0;i<str.num_elements;i++){
@@ -305,6 +319,8 @@ void allocateAdjMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat){
         adj_mat.stiff[i*2+1]    = std::vector<double>(size_of_column_nonzero, 0);
         adj_mat.stiff_geo[i*2]   = std::vector<double>(size_of_column_nonzero, 0);
         adj_mat.stiff_geo[i*2+1] = std::vector<double>(size_of_column_nonzero, 0);
+        adj_mat.mass[i*2]      = std::vector<double>(size_of_column_nonzero, 0);
+        adj_mat.mass[i*2+1]    = std::vector<double>(size_of_column_nonzero, 0);
     }
 #ifdef DEBUG
     debugPrintInfo(__func__);

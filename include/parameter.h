@@ -26,6 +26,8 @@ struct Sim{
 	int dim;
 	int id;
 	int num_mode;
+	double magnify_ratio;
+	int num_spc = 0;
 };
 
 struct Str{
@@ -60,9 +62,12 @@ struct Str{
 	// buckling
 	std::vector<double> buckling_coeff;
 	std::vector<std::vector<double>> buckling_x, buckling_y, buckling_z;
+	// eigen mode
+	std::vector<double> eigen_value;
+	std::vector<std::vector<double>> eigen_mode_x, eigen_mode_y, eigen_mode_z;
 };
 
 struct AdjMatrix{
 	std::vector< std::vector<int> > idx;
-	std::vector< std::vector<double> > stiff, stiff_geo;
+	std::vector< std::vector<double> > stiff, stiff_geo, mass;
 };

@@ -9,10 +9,14 @@
 #include <Eigen/IterativeLinearSolvers>
 #include <Eigen/Eigenvalues>
 #include <vector>
-/*
+//*
 #include <Spectra/SymGEigsShiftSolver.h>
 #include <Spectra/MatOp/SymShiftInvert.h>
 #include <Spectra/MatOp/SparseSymMatProd.h>
+
+#include <Spectra/SymGEigsSolver.h>
+#include <Spectra/MatOp/SparseGenMatProd.h>
+#include <Spectra/MatOp/SparseCholesky.h>
 //*/
 #include "parameter.h"
 #include "topopt.h"
@@ -22,7 +26,7 @@ typedef Eigen::VectorXd Vector;
 typedef Eigen::MatrixXd Matrix;
 
 struct StructureMatrix{
-	SpMat stiff, stiff_geo;
+	SpMat stiff, stiff_geo, mass;
 };
 
 struct StructureVector{
@@ -47,10 +51,12 @@ void solveLinearEquation2D(Sim& sim, Str& str);
 bool eigenSolver(SpMat& A, Vector& x, Vector& b, Sim& sim);
 bool eigenLU(SpMat& A, Vector& x, Vector& b);
 bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b);
+// modal solver
+void solveEigenMode2D(Sim& sim, Str& str);
 // buckling solver
 void solveBuckling2D(Sim& sim, Str& str);
-bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, Sim& sim, Str& str);
-bool SpectraSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, Sim& sim);
+bool EigenValueSolver(SpMat& A, SpMat& B, Matrix& phi, std::vector<double>& lambda, Sim& sim);
+bool SpectraSolver(SpMat& A, SpMat& B, Matrix& phi, std::vector<double>& lambda, Sim& sim);
 // topology optimization
 void calcCompliance(double& compliance);
 void calcSensitivity(TopOpt& top, Str& str);

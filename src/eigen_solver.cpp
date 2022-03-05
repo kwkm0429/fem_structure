@@ -12,19 +12,19 @@ static StructureVector s_vec;
 
 void initSparseMatrix(Sim& sim, Str& str){
 #ifdef MEASURE
-	double time_start = elapsedTime();
+	double t_start = elapsedTime();
 #endif
     // initialize matrices
 	s_mat.stiff.resize(str.num_nodes*sim.dim, str.num_nodes*sim.dim);
 	s_mat.stiff_geo.resize(str.num_nodes*sim.dim, str.num_nodes*sim.dim);
+	s_mat.mass.resize(str.num_nodes*sim.dim, str.num_nodes*sim.dim);
 	// reserve memory
 	s_mat.stiff.reserve(sim.num_nonzero);
 	s_mat.stiff_geo.reserve(sim.num_nonzero);
+	s_mat.mass.reserve(sim.num_nonzero);
 #ifdef MEASURE
-	double time_end = elapsedTime();
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<"initSparseMatrix(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 #ifdef DEBUG
     debugPrintInfo(__func__);
@@ -35,9 +35,11 @@ void freeSparseMatrix(){
 	// resize
 	s_mat.stiff.resize(0, 0);
 	s_mat.stiff_geo.resize(0, 0);
+	s_mat.mass.resize(0, 0);
 	// free memory
 	s_mat.stiff.data().squeeze();
 	s_mat.stiff_geo.data().squeeze();
+	s_mat.mass.data().squeeze();
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
@@ -45,7 +47,7 @@ void freeSparseMatrix(){
 
 void setSparseMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #ifdef MEASURE
-	double time_start = elapsedTime();
+	double t_start = elapsedTime();
 #endif
 	int i,j, nodeIdx;
 	for(i=0;i<str.num_nodes*2;i++){
@@ -56,13 +58,13 @@ void setSparseMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat){
 			s_mat.stiff.insert(i, nodeIdx*2+1) = adj_mat.stiff[i][j*2+1];
 			s_mat.stiff_geo.insert(i, nodeIdx*2) = -adj_mat.stiff_geo[i][j*2];
 			s_mat.stiff_geo.insert(i, nodeIdx*2+1) = -adj_mat.stiff_geo[i][j*2+1];
+			s_mat.mass.insert(i, nodeIdx*2) = adj_mat.mass[i][j*2];
+			s_mat.mass.insert(i, nodeIdx*2+1) = adj_mat.mass[i][j*2+1];
 		}
 	}
 #ifdef MEASURE
-	double time_end = elapsedTime();
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<"setSparseMatrix(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 #ifdef DEBUG
     debugPrintInfo(__func__);
@@ -71,7 +73,7 @@ void setSparseMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat){
 
 void setBoundaryCondition2D(SpMat& A, Vector& b, Sim& sim, Str& str){
 #ifdef MEASURE
-	double time_start = elapsedTime();
+	double t_start = elapsedTime();
 #endif
 	int i, j;
 
@@ -119,10 +121,8 @@ void setBoundaryCondition2D(SpMat& A, Vector& b, Sim& sim, Str& str){
 		}
 	}
 #ifdef MEASURE
-	double time_end = elapsedTime();
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<"setBoundaryCondition(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 #ifdef DEBUG
     debugPrintInfo(__func__);
@@ -164,7 +164,7 @@ void solveLinearEquation2D(Sim& sim, Str& str){
 
 bool eigenSolver(SpMat& A, Vector& x, Vector& b, Sim& sim){
 #ifdef MEASURE
-	double time_start = elapsedTime();
+	double t_start = elapsedTime();
 #endif 
 #ifdef _OPENMP
 	Eigen::initParallel();
@@ -182,10 +182,8 @@ bool eigenSolver(SpMat& A, Vector& x, Vector& b, Sim& sim){
 			ret = false;
 	}
 #ifdef MEASURE
-	double time_end = elapsedTime();
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<"eigenSolver(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 #ifdef DEBUG
     debugPrintInfo(__func__);
@@ -238,20 +236,27 @@ bool eigenBiCGSTAB(SpMat& A, Vector& x, Vector& b){
 	return true;
 }
 
-void solveBuckling2D(Sim& sim, Str& str){
-	int i;
+void solveEigenMode2D(Sim& sim, Str& str){
+	int i, j;
 	bool is_solved = true;
 	Vector v = Vector::Zero(str.num_nodes*2);
+	Matrix phi = Matrix::Zero(str.num_nodes*2, sim.num_mode);
 
-	// solve (KL+\lambda Kg)\phi = 0 -> (Kg+1/\lambda KL)\phi = 0 -> -Kg v = 1/lambda KL v
 	//std::cout<<"check geometric stiffness matrix"<<std::endl;
+	//std::cout<<s_mat.mass<<std::endl;
 	//std::cout<<s_mat.stiff<<std::endl;
-	//std::cout<<s_mat.stiff_geo<<std::endl;
-	setBoundaryCondition2D(s_mat.stiff_geo, v, sim ,str);
+	setBoundaryCondition2D(s_mat.mass, v, sim ,str);
 	setBoundaryCondition2D(s_mat.stiff, v, sim ,str);
-	is_solved = EigenValueSolver(s_mat.stiff_geo, s_mat.stiff, v, str.buckling_coeff, sim, str);
+	// solve Kv = \lambda Mv
+	is_solved = EigenValueSolver(s_mat.stiff, s_mat.mass, phi, str.eigen_value, sim);
 	//is_solved = SpectraSolver(s_mat.stiff_geo, s_mat.stiff, v, str.buckling_coeff, sim);
 
+	for(i=0;i<sim.num_mode;i++){
+		for(j=0;j<str.num_nodes;j++){
+			str.eigen_mode_x[i][j] = phi(j*2, i);
+			str.eigen_mode_y[i][j] = phi(j*2+1, i);
+		}
+	}
 	if(!is_solved){
 		std::cout<<"Failed "<<__func__<<std::endl;
 		exit(1);
@@ -261,7 +266,41 @@ void solveBuckling2D(Sim& sim, Str& str){
 #endif
 }
 
-bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, Sim& sim, Str& str){
+
+void solveBuckling2D(Sim& sim, Str& str){
+	int i, j;
+	bool is_solved = true;
+	Vector v = Vector::Zero(str.num_nodes*2);
+	Matrix phi = Matrix::Zero(str.num_nodes*2, sim.num_mode);
+
+	//std::cout<<"check geometric stiffness matrix"<<std::endl;
+	//std::cout<<s_mat.stiff<<std::endl;
+	//std::cout<<s_mat.stiff_geo<<std::endl;
+	setBoundaryCondition2D(s_mat.stiff_geo, v, sim ,str);
+	setBoundaryCondition2D(s_mat.stiff, v, sim ,str);
+	// solve (KL+\lambda Kg)\phi = 0 -> (Kg+1/\lambda KL)\phi = 0 -> -Kg v = 1/lambda KL v
+	//is_solved = EigenValueSolver(s_mat.stiff_geo, s_mat.stiff, phi, str.buckling_coeff, sim);
+	is_solved = SpectraSolver(s_mat.stiff_geo, s_mat.stiff, phi, str.buckling_coeff, sim);
+
+	for(i=0;i<sim.num_mode;i++){
+		for(j=0;j<str.num_nodes;j++){
+			str.buckling_x[i][j] = phi(j*2, i);
+			str.buckling_y[i][j] = phi(j*2+1, i);
+		}
+	}
+	if(!is_solved){
+		std::cout<<"Failed "<<__func__<<std::endl;
+		exit(1);
+	}
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}
+
+bool EigenValueSolver(SpMat& A, SpMat& B, Matrix& phi, std::vector<double>& lambda, Sim& sim){
+#ifdef MEASURE
+	double t_start = elapsedTime();
+#endif
 	int i, j, id, size;
 	double norm=0;
 	// convert sparse to dense matrix because Eigen does not support sparse matrix for eigenvalue solver.
@@ -272,21 +311,24 @@ bool EigenValueSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda
 	//std::cout << "The matrix of eigenvectors, V, is:" << std::endl << es.eigenvectors() << std::endl << std::endl;
 	
 	size = es.eigenvalues().size();
-	for(i=0;i<sim.num_mode;i++){
-		lambda[i] = 1.0/es.eigenvalues()[size-1-i];
-		v = es.eigenvectors().col(size-1-i);
-		norm=0;
-		for(j=0;j<str.num_nodes;j++){
-			str.buckling_x[i][j] = v[j*2];
-			str.buckling_y[i][j] = v[j*2+1];
-		}
-		std::cout << i<<") Eigen value, lambda = " << lambda[i] << std::endl;
+	id = 0;
+	for(i=0;id<sim.num_mode;i++){
+		if(std::abs(es.eigenvalues()[size-1-i]-1)<1e-7)continue;
+		if(id>=sim.num_mode)break;
+		lambda[id] = 1.0/es.eigenvalues()[size-1-i];
+		phi.col(id) = es.eigenvectors().col(size-1-i);
+		std::cout << id<<") Eigen value, lambda = " << lambda[id] << std::endl;
+		id++;
 	}
 	if(es.info()!=Eigen::Success) {
 		// solving failed
 		std::cout<<"Failed "<<__func__<<std::endl;
 		return false;
 	}
+#ifdef MEASURE
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
+#endif
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
@@ -344,6 +386,59 @@ bool SpectraSolver(SpMat& A, SpMat& B, Vector& v, std::vector<double>& lambda, S
     debugPrintInfo(__func__);
 #endif
 }*/
+
+//*
+bool SpectraSolver(SpMat& A, SpMat& B, Matrix& phi, std::vector<double>& lambda, Sim& sim){
+#ifdef MEASURE
+	double t_start = elapsedTime();
+#endif
+	int i, j, id, size;
+	// convert to Eigen::ColMajor because Spectra and Eigen has error for RowMajor
+	//*
+	Eigen::SparseMatrix<double> Ae, Be;
+	Ae.resize(A.outerSize(), A.outerSize());
+	Be.resize(B.outerSize(), B.outerSize());
+	Ae.reserve(sim.num_nonzero);
+	Be.reserve(sim.num_nonzero);
+	for(i=0;i<A.outerSize();++i){
+		for(SpMat::InnerIterator it(A, i); it; ++it){
+			Ae.insert(it.col(), i) = it.valueRef();
+		}
+	}
+	for(i=0;i<B.outerSize();++i){
+		for(SpMat::InnerIterator it(B, i); it; ++it){
+			Be.insert(it.col(), i) = it.valueRef();
+		}
+	}
+	Spectra::SparseSymMatProd<double> Aop(Ae);
+	Spectra::SparseCholesky<double> Bop(Be);
+	Spectra::SymGEigsSolver<Spectra::SparseSymMatProd<double>, Spectra::SparseCholesky<double>, Spectra::GEigsMode::Cholesky> geigs(Aop, Bop, sim.num_mode+sim.num_spc, sim.num_mode*2+sim.num_spc);
+	geigs.init();
+	int nconv = geigs.compute(Spectra::SortRule::LargestAlge);
+
+	size = geigs.eigenvalues().size();
+	id = 0;
+	std::cout<<geigs.eigenvalues()<<std::endl;
+	for(i=sim.num_spc;i<sim.num_spc+sim.num_mode;i++){
+		lambda[id] = 1.0/geigs.eigenvalues()[i];
+		phi.col(id) = geigs.eigenvectors().col(i);
+		std::cout << id<<") Eigen value, lambda = " << lambda[id] << std::endl;
+		id++;
+	}
+
+	if(Spectra::CompInfo::Successful != geigs.info()){
+		std::cerr << "Failed " << __func__ <<std::endl;
+		return false;
+	}
+#ifdef MEASURE
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
+#endif
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+    return true;
+}//*/
 
 // Topology Optimization
 void calcCompliance(double& compliance){
