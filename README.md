@@ -7,11 +7,24 @@
 ### 解析種類
 - 線形静解析
 - 線形座屈解析(予定)
-- トポロジー最適化(密度法)
+- 固有値解析(予定)
+- トポロジー最適化
 
 ### 要素形状
 - 2次元：1次四辺形要素
 - 3次元：1次四面体要素(予定)、2次四面体要素(予定)
+
+### 構成
+```
+.
+├── bin         ... Binary Files
+├── data-input  ... Input Data Files
+├── data-output ... Output Data Files (.vtk files)
+├── include     ... Header Files
+├── examples    ... Example Input Files
+├── src         ... Sorce Files
+└── src-tools   ... Tools
+```
 
 ### 入力ファイル
 - 節点ファイル: data-input/node.dat

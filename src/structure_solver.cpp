@@ -52,8 +52,6 @@ void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	outputDispVtkFile(0, sim, str);
 	outputStrainVtkFile(0, sim, str);
 	outputStressVtkFile(0, sim, str);
-	// calculate boundary shape function
-	calcBoundaryShapeFunction(sim, str);
 	// coloring Elements for Element Matrix Parallelization
 	coloringElements(sim, str);
 	
@@ -83,7 +81,6 @@ void exeStaticAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 
 void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	int i;
-
 	exeStaticAnalysis(sim, str, adj_mat);
 	calcStressStrain(sim, str, adj_mat);
 	// set stress stiffness matrix
@@ -109,6 +106,42 @@ void exeBucklingAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	outputStressVtkFile(1, sim, str);
 	updatePosition(str);
 	outputDispVtkFile(1,sim, str);
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}
+
+void exeModalAnalysis(Sim& sim, Str& str, AdjMatrix& adj_mat){
+	int i;
+	// output initial state
+	outputParameterDataFile(sim);
+	// coloring Elements for Element Matrix Parallelization
+	coloringElements(sim, str);
+	
+#ifdef MEASURE
+	std::ofstream ofs(sim.time_output_filename, std::ios::app);
+#endif
+	// initialize sparse matrixs
+	initSparseMatrix(sim, str);
+	// set stress stiffness matrix
+	if(sim.dim == 2){
+		calcElementMatrix2Dquad(sim, str, adj_mat);
+	}else if(sim.dim == 3){
+		calcElementMatrix3Dtetra(sim, str, adj_mat);
+	}else{
+		std::cout<<"Dimension Error: "<<sim.dim<<std::endl;
+		exit(1);
+	}
+	// set sparse matrix
+	freeSparseMatrix();
+	initSparseMatrix(sim, str);
+	setSparseMatrix(sim, str, adj_mat);
+	// solve
+	solveEigenMode2D(sim, str);
+	// output
+	for(i=0;i<sim.num_mode;i++){
+		outputEigenModeVtkFile(i, sim, str);
+	}
 #ifdef DEBUG
     debugPrintInfo(__func__);
 #endif
