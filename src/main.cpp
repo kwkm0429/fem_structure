@@ -8,7 +8,7 @@
 
 int main(){
 #ifdef MEASURE
-	initializeTime();
+	double t_start = elapsedTime();
 #endif
 
 	Sim sim; // struct for simulation setup parameter
@@ -29,14 +29,15 @@ int main(){
 		case 2: // buckling analysis
 			exeBucklingAnalysis(sim, str, adj_mat);
 			break;
+		case 3: // modal analysis
+			exeModalAnalysis(sim, str, adj_mat);
 		default:
 			break;
 	}
 
 #ifdef MEASURE
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<"SIMULATION-ENTIRE-TIME: "<<elapsedTime()/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 	return 0;
 }

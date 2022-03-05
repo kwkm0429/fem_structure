@@ -129,9 +129,21 @@ void calcStiffGeoMatrix2D(std::vector<std::vector<double>>& Kg, std::vector<std:
 	multi_mat_mat(Kg, temp, Diff);
 }
 
+void calcMassMatrix2D(std::vector<std::vector<double>>& M, std::vector<double>& N, int j, Str& str){
+	int i, ii;
+	for(i=0;i<4;i++){
+		for(ii=0;ii<4;ii++){
+			M[i*2][ii*2]     += N[j*4+i]*N[j*4+ii]*str.density;
+			M[i*2][ii*2+1]   += N[j*4+i]*N[j*4+ii]*str.density;
+			M[i*2+1][ii*2]   += N[j*4+i]*N[j*4+ii]*str.density;
+			M[i*2+1][ii*2+1] += N[j*4+i]*N[j*4+ii]*str.density;
+		}
+	}
+}
+
 void calcStressStrain(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #ifdef MEASURE
-	double time_start = elapsedTime();
+	double t_start = elapsedTime();
 #endif
 	int i = 0, j = 0;
 	std::vector<int> node_id = std::vector<int>(4,0);
@@ -191,10 +203,8 @@ void calcStressStrain(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #endif
 	}
 #ifdef MEASURE
-	double time_end = elapsedTime();
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<__func__<<" "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 #ifdef DEBUG
     debugPrintInfo(__func__);
@@ -203,7 +213,7 @@ void calcStressStrain(Sim& sim, Str& str, AdjMatrix& adj_mat){
 
 void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #ifdef MEASURE
-	double time_start = elapsedTime();
+	double t_start = elapsedTime();
 #endif
 	int i = 0, j = 0, k = 0, l = 0;
 	std::vector<int> node_id = std::vector<int>(4,0);
@@ -227,7 +237,8 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	std::vector<std::vector<double>> stiff_geo_matrix_temp = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // Kg matrix
 	std::vector<std::vector<double>> stress_matrix = std::vector< std::vector<double> >(4,std::vector<double>(4,0)); // stress matrix
 	std::vector<std::vector<double>> diff_matrix = std::vector< std::vector<double> >(4,std::vector<double>(8,0)); // differential matrix
-
+	// M matrix
+	std::vector<std::vector<double>> mass_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // M matrix
 	int connect_check = 0;
 	int size_of_column_nonzero = 0;
 	// fluid local variables for OpenMP parallel
@@ -274,10 +285,14 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 			}
 			stiff_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // K matrix
 			stiff_geo_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // Kg matrix
+			mass_matrix = std::vector< std::vector<double> >(8,std::vector<double>(8,0)); // M matrix
 			// calc D matrix (plane stress)
 			calcDMatrix2DPlaneStress(stress_strain_matrix, str);
 			// calc B matrix
 			for(j=0;j<4;j++){ // quadrature point
+				// calc M matrix
+				calcMassMatrix2D(mass_matrix, N, j, str);
+				// calc B matrix
 				calcBMatrix2D(strain_disp_matrix, dN_dx, dN_dy, j);
 				// calculate element stiffness matrix
 				calcStiffnessMatrix(stiff_matrix_temp, strain_disp_matrix, stress_strain_matrix);
@@ -321,6 +336,11 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 							adj_mat.stiff_geo[node_id[j]*2][l*2+1]   += stiff_geo_matrix[j*2][k*2+1];
 							adj_mat.stiff_geo[node_id[j]*2+1][l*2]   += stiff_geo_matrix[j*2+1][k*2];
 							adj_mat.stiff_geo[node_id[j]*2+1][l*2+1] += stiff_geo_matrix[j*2+1][k*2+1];
+							// mass matrix
+							adj_mat.mass[node_id[j]*2][l*2]     += mass_matrix[j*2][k*2];
+							adj_mat.mass[node_id[j]*2][l*2+1]   += mass_matrix[j*2][k*2+1];
+							adj_mat.mass[node_id[j]*2+1][l*2]   += mass_matrix[j*2+1][k*2];
+							adj_mat.mass[node_id[j]*2+1][l*2+1] += mass_matrix[j*2+1][k*2+1];
 						}
 					}
 				}
@@ -336,10 +356,8 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	}
 	str.element_func = f_element_func;
 #ifdef MEASURE
-	double time_end = elapsedTime();
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<"calcElementMatrix2Dquad() : "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 #ifdef DEBUG
 	std::cout<<"Matrix nonzero element num : "<<sim.num_nonzero<<std::endl;
@@ -350,7 +368,7 @@ void calcElementMatrix2Dquad(Sim& sim, Str& str, AdjMatrix& adj_mat){
 
 void calcElementMatrix3Dtetra(Sim& sim, Str& str, AdjMatrix& adj_mat){
 #ifdef MEASURE
-	double time_start = elapsedTime();
+	double t_start = elapsedTime();
 #endif
 	int i = 0, j = 0, k = 0, l = 0;
 	int size_of_column_nonzero = 0;
@@ -488,10 +506,8 @@ void calcElementMatrix3Dtetra(Sim& sim, Str& str, AdjMatrix& adj_mat){
 	}
 	str.element_func = f_element_func;
 #ifdef MEASURE
-	double time_end = elapsedTime();
-	std::ofstream ofs(sim.time_output_filename, std::ios::app);
-	ofs<<"calcElementMatrix3Dtetra(): "<<(time_end - time_start)/1000<<" [s]"<<std::endl;
-	ofs.close();
+	double t_end = elapsedTime();
+	writeTime(sim.time_output_filename, __func__, t_start, t_end);
 #endif
 #ifdef DEBUG
     debugPrintInfo(__func__);

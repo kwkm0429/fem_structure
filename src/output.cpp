@@ -192,6 +192,52 @@ void outputBucklingVtkFile(int number, Sim& sim, Str& str){
 }
 
 
+void outputEigenModeVtkFile(int number, Sim& sim, Str& str){
+	int i,j;
+	char head[16]="eigen_mode";
+	char end[16]=".vtk";
+	char filename[256];
+	sprintf(filename,"%s%d%s",head,number,end);
+	std::ofstream ofs(sim.output_data_dirname + filename);
+	ofs<<"# vtk DataFile Version 4.0"<<std::endl;
+	ofs<<"scalar"<<std::endl;
+	ofs<<"ASCII"<<std::endl;
+	ofs<<"DATASET UNSTRUCTURED_GRID"<<std::endl;
+	ofs<<"POINTS "<<str.num_nodes<<" float"<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<str.x[i]+str.eigen_mode_x[number][j]<<" "<<str.y[i]+str.eigen_mode_y[number][i]<<" "<<str.z[i]+str.eigen_mode_z[number][i]<<std::endl;
+	}
+	ofs<<"CELLS "<<str.num_elements<<" "<<5*str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		ofs<<sim.num_polygon_corner<<" ";
+		for(j=0;j<sim.num_polygon_corner;j++){
+			ofs<<str.element_node_table[i][j];
+			if(j!=sim.num_polygon_corner-1)ofs<<" ";
+			else ofs<<std::endl;
+		}
+	}
+	ofs<<"CELL_TYPES "<<str.num_elements<<std::endl;
+	for(i=0;i<str.num_elements;i++){
+		if(sim.dim == 2)ofs<<9<<std::endl;
+		else if(sim.dim == 3)ofs<<10<<std::endl;
+	}
+	ofs<<"POINT_DATA "<<str.num_nodes<<std::endl;
+	ofs<<"VECTORS Buckling_Vector float"<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<str.eigen_mode_x[number][i]<<" "<<str.eigen_mode_y[number][i]<<" "<<str.eigen_mode_z[number][i]<<std::endl;
+	}
+	ofs<<"SCALARS Buckling_Scalar float"<<std::endl;
+	ofs<<"LOOKUP_TABLE default"<<std::endl;
+	for(i=0;i<str.num_nodes;i++){
+		ofs<<std::sqrt(str.eigen_mode_x[number][i]*str.eigen_mode_x[number][i]+str.eigen_mode_y[number][i]*str.eigen_mode_y[number][i]+str.eigen_mode_z[number][i]*str.eigen_mode_z[number][i])<<std::endl;
+	}
+	ofs.close();
+#ifdef DEBUG
+    debugPrintInfo(__func__);
+#endif
+}
+
+
 void outputDensityVtkFile(int number, TopOpt& top, Sim& sim, Str& str){
 	int i,j;
 	char head[16]="density";

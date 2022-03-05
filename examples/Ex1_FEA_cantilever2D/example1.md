@@ -3,6 +3,7 @@
 ## 入力コマンド
 ```
 $ cp ./examples/cantilever2D_FEA/*.dat ./examples/cantilever2D_FEA/*.prm  ./data-input/
+$ make
 $ ./bin/fem
 ```
 
