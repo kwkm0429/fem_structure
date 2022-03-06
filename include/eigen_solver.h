@@ -33,18 +33,12 @@ struct StructureVector{
 	Vector disp;
 };
 
-enum ParameterID{
-	DX = 0,
-	DY = 1,
-	DZ = 2,
-};
-
 // manage sparse matrix
 void initSparseMatrix(Sim& sim, Str& str);
 void freeSparseMatrix();
 void setSparseMatrix(Sim& sim, Str& str, AdjMatrix& adj_mat);
 // boundary condition
-void setBoundaryCondition2D(SpMat&, Vector&, ParameterID, Sim& sim, Str& str);
+void setBoundaryCondition2D(SpMat&, Vector&, Sim& sim, Str& str);
 // solve linear equation
 void solveLinearEquation2D(Sim& sim, Str& str);
 // linear solver

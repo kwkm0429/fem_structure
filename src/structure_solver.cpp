@@ -2,7 +2,8 @@
 #include <vector>
 #include <fstream>
 
-#include "fem_matrix.h"
+#include "matrix_fem_2D.h"
+#include "matrix_fem_3D.h"
 #include "parameter.h"
 #include "output.h"
 #include "structure_solver.h"
